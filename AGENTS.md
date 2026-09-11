@@ -19,7 +19,7 @@ After STOP 1, help the student propose and approve the six TARGET lines and one 
 
 ## My standing rule
 
-[One observable, student-approved rule that protects this project's purpose or experience.]
+A player must select exactly one winner for every displayed game before locking picks; after lock-in, the choices remain visible but cannot be changed.
 
 ## Workflow
 
