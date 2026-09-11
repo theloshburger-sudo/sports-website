@@ -2,11 +2,11 @@
 
 Choose the idea, person, interaction, and visual direction. The agent can help phrase and save your decisions after you approve them. The provided scope and review safeguards stay in place.
 
-- **Thing:** [My one-page website or mini-app and its main interaction.]
-- **Audience:** [One specific person, and what they want to do or understand.]
-- **Requirements:** One working primary interaction; selected states and results are understandable; honor my approved standing rule in AGENTS.md.
+- **Thing:** BragBoard — a one-page private friend-group picker where players choose sample NBA and NFL game winners, lock their weekly card, and see a sample leaderboard update.
+- **Audience:** Groups of friends who watch pro sports and want a simple, free season-long bragging-rights competition without fantasy-roster complexity or real-money stakes.
+- **Requirements:** A visitor can choose exactly one winner for each displayed game, lock in their weekly picks, and see an understandable sample leaderboard rank change. The resulting movement uses a basketball-to-hoop animation for a basketball game and a football-through-goalpost animation for a football game. Honor the approved standing rule in AGENTS.md.
 - **Guardrails:** Static browser code. No required external service, keys, accounts, runtime AI, or private data. Label fictional or sample content. Preserve the example and publishing setup. Work on a branch and wait for human review before shipping.
-- **Experience:** [My visual reference or direction and the most important layout or interaction relationship.]
-- **Test:** I can complete the main action, check one boundary or factual claim, and point to my standing rule's effect in the actual preview. After I approve and merge, the same registered Pages URL works.
+- **Experience:** A website-first, sporty dark-mode interface inspired by Sleeper’s bold clarity: condensed display type, black/charcoal panels, gold accents, subtle tiger-stripe texture, large game cards, and a prominent private-league leaderboard.
+- **Test:** I can choose winners, confirm one winner per game, lock my picks, see the correct sport-specific scoring animation and rank movement, identify that all data is sample content, and verify the same registered Pages URL after approval and merge.
 
 The coastal example has a [completed TARGET](examples/coast/SPEC.md). It demonstrates the format, not a required topic.
