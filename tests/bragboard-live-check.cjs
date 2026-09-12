@@ -26,10 +26,11 @@ check(app.includes("record_game_result") && app.includes("finalize_week"), "keep
 check(app.includes("punishment_proposals") && app.includes("proposal_approvals"), "keeps voluntary-punishment proposals and approvals in the app");
 check(html.includes("no money on the line") && html.includes("does not collect payments"), "discloses the non-cash boundary");
 check(sql.includes("enable row level security") && sql.includes("public.is_member"), "enables member-scoped row-level access");
+check(!sql.includes("encode(gen_random_bytes") && sql.includes("gen_random_uuid"), "creates invite codes without a pgcrypto-only random-bytes function");
 check(sql.includes("Your picks are already locked.") && sql.includes("kickoff_at <= now()"), "enforces immutable pre-kickoff picks in the database");
 check(sql.includes("Only the league host") && sql.includes("record_game_result"), "limits result administration to hosts");
 check(sql.includes("award_type in ('weekly', 'monthly')") && /'weekly', period, 10/.test(sql) && /'monthly', period, 20/.test(sql), "defines non-cash weekly and monthly coin awards");
 check(!/service[_-]?role\s*[:=]\s*['"][^'"]+/.test(config), "contains no service-role credential");
 check(!/(stripe|venmo|cashapp|payment intent)/i.test(html + "\n" + app + "\n" + sql), "contains no payment collection integration");
 
-console.log("18 BragBoard live-foundation checks passed. They do not execute a Supabase project or browser UI.");
+console.log("19 BragBoard live-foundation checks passed. They do not execute a Supabase project or browser UI.");
