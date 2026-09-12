@@ -19,7 +19,7 @@ After STOP 1, help the student propose and approve the six TARGET lines and one 
 
 ## My standing rule
 
-A player must select exactly one winner for every displayed game before locking picks; after lock-in, the choices remain visible but cannot be changed. Punishments require unanimous approval before the month begins, remain voluntary, and cannot involve dangerous, degrading, sexual, illegal, or financially coercive acts. Assignments and scoring settings lock before play. Coins have no cash value and cannot be purchased, transferred, or redeemed; power-ups must be chosen before pick lock-in.
+A player must select exactly one winner for every displayed game before locking picks; after lock-in, the choices remain visible but cannot be changed. Punishments require unanimous approval before the month begins, remain voluntary, and cannot involve dangerous, degrading, sexual, illegal, or financially coercive acts. Assignments and scoring settings lock before play. Coins have no cash value and cannot be purchased, transferred, or redeemed; power-ups must be chosen before pick lock-in. Real leagues use authenticated members and row-level database rules; never expose a service-role key in browser code.
 
 ## Workflow
 
@@ -29,7 +29,7 @@ A player must select exactly one winner for every displayed game before locking 
 - Build one page and one primary interaction with ordinary HTML, CSS, and JavaScript plus approved local assets. Do not impose the coastal example's topic, data, or colors.
 - Preserve `examples/`, shared teaching docs, and publishing settings during a student's personal build. Changes to these require an explicit maintainer request. Keep the instructor example self-contained.
 - Separate reference imagery from factual sources. Use licensed or approved assets; label illustrative or fictional content. Do not fabricate metrics, testimonials, integrations, live conditions, or verification.
-- Do not add secrets, private records, runtime model calls, a backend, a required paid service, or unsolicited analytics.
+- Supabase Auth and a row-level-secured Supabase database are approved for real private-league accounts, invitations, picks, and standings. Keep all privileged credentials server-side; a public browser anon key is allowed only with the supplied row-level policies. Do not add runtime model calls, payments, a cash pot, or unsolicited analytics.
 - Use safe text rendering, keyboard-operable controls, visible focus, readable contrast, responsive layouts, and reduced-motion support. Prefer short, purposeful transitions over perpetual motion.
 - Run relevant functional and boundary checks. Preview the actual proposed branch before approval and report checks not run. Screenshots or code diffs alone do not establish interactive correctness.
 - After human preview approval, open a PR only when requested. Summarize changed files and tests. Do not merge or publish without explicit approval.
