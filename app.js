@@ -3,15 +3,15 @@ const $ = (id) => document.getElementById(id);
 const state = { client: null, user: null, profile: null, leagues: [], league: null, member: null, week: null, games: [], picks: new Map(), signingUp: false, setup: { step: 0, answers: {} } };
 const setupQuestions = [
   { key: "name", title: "What should your league be called?", help: "Choose a name your friends will recognize. You can change it later.", input: "Sunday Pick Crew" },
-  { key: "authority", title: "Who should manage your league’s settings?", help: "This controls regular settings such as sports and competitions. For-fun challenges always require approval from everyone.", choices: [["everyone", "Everyone decides together", "All members must agree before a regular league setting changes."], ["host", "The host manages settings", "The person who created the league can update regular settings."]] },
-  { key: "competitions", title: "Which sports will your group pick?", help: "Choose what you want to start with. The host adds that week’s games, and this setting can be changed later.", choices: [["mixed", "Multiple sports", "Mix games from different sports in the same league."], ["basketball", "Basketball", "Start with basketball games only."], ["football", "Football", "Start with football games only."], ["soccer", "Soccer", "Start with soccer matches only."]] },
+  { key: "authority", title: "Who should manage your league’s settings?", help: "This controls regular settings such as sports and competitions. Punishments always require approval from everyone.", choices: [["everyone", "Everyone decides together", "All members must agree before a regular league setting changes."], ["host", "The host manages settings", "The person who created the league can update regular settings."]] },
+  { key: "sports", title: "Which sports will your group pick?", help: "Choose one or more sports to start with. The host adds that week’s games, and these choices can be changed later.", multi: true, choices: [["basketball", "Basketball", "Add basketball games to your league."], ["football", "Football", "Add football games to your league."], ["soccer", "Soccer", "Add soccer matches to your league."]] },
   { key: "winner_period", title: "How often should your league crown a winner?", help: "Choose how long results should count before a new competition begins.", choices: [["weekly", "Every week", "Crown a new winner based on that week’s completed games."], ["monthly", "Every month", "Crown a winner based on all scored picks during the calendar month."], ["weekly_monthly", "Weekly and monthly", "Celebrate weekly winners while also tracking a monthly champion."]] },
-  { key: "challenge_mode", title: "Should your league use one shared for-fun challenge or separate challenges?", help: "For-fun challenges are optional, harmless challenges for friends. Every idea needs approval from everyone, and anyone can choose not to participate.", choices: [["shared", "One shared for-fun challenge", "Everyone who participates receives the same approved challenge."], ["separate", "Separate for-fun challenges", "Different approved challenges can be assigned to individual participants."]] },
-  { key: "selection", title: "How should the final challenge be chosen?", help: "First, everyone must approve the available ideas. Then your group uses one of these methods to choose among them.", choices: [["vote", "Let the group vote", "Members vote, and the most popular approved idea wins."], ["random", "Choose randomly", "BragBoard randomly selects one of the ideas everyone has approved."], ["turns", "Take turns choosing", "Members choose approved ideas in a rotating order."]] },
-  { key: "loser_scope", title: "Who can be invited to complete the challenge?", help: "This determines who is eligible based on the standings. Participating is always voluntary.", choices: [["last", "The last-place player", "Only the person at the bottom of the standings is invited."], ["bottom_three", "The bottom three players", "The three lowest-ranked players are invited."]] },
+  { key: "punishment_mode", title: "Should your league use one shared punishment or separate punishments?", help: "Punishments are optional, harmless social consequences for the group. Every idea needs approval from everyone, and anyone may opt out or leave the league.", choices: [["shared", "One shared punishment", "The group uses the same approved punishment for the people assigned by the standings."], ["separate", "Separate punishments", "The group can approve and assign different punishments to individual players."]] },
+  { key: "selection", title: "How should the final punishment be chosen?", help: "First, everyone must approve the available ideas. Then your group chooses among them.", choices: [["vote", "Let the group vote", "Members vote, and the most popular approved idea wins."], ["random", "Choose randomly", "BragBoard randomly selects one of the ideas everyone has approved."]] },
+  { key: "loser_scope", title: "Who is assigned the punishment?", help: "This setting uses the standings to determine who is assigned the group’s approved punishment. It is a social agreement, not a legal obligation: participation remains voluntary.", choices: [["last", "The last-place player", "The player at the bottom of the standings is assigned the approved punishment."], ["bottom_three", "The bottom three players", "The three lowest-ranked players are assigned an approved punishment."]] },
   { key: "coins", title: "Should winners earn BragBoard Coins?", help: "BragBoard Coins are in-app points for bragging rights. They are not real money and cannot be purchased, transferred, sold, or redeemed.", choices: [["on", "Yes, award BragBoard Coins", "Weekly winners earn 10 coins and monthly winners earn 20."], ["off", "No, use the leaderboard only", "Track wins and standings without awarding coins."]] },
-  { key: "lock_rule", title: "Make sure you understand how picks lock", help: "Each member chooses one winner for every game. Picks can change until the member locks their card; after a pick locks, it cannot be edited.", choices: [["confirmed", "I understand—locked picks are final", "Every pick must be locked before its game begins. After lock-in, it stays final."]] },
-  { key: "safety", title: "Agree to the league safety rules", help: "For-fun challenges must be harmless, legal, and voluntary. Dangerous, degrading, sexual, discriminatory, or financially coercive ideas are not allowed. Anyone can decline at any time.", choices: [["confirmed", "I agree to keep challenges safe and voluntary", "Your group can only use ideas everyone has approved."]] }
+  { key: "punishment_proposal", title: "Propose a punishment", help: "Write one punishment for your group to review. You will see everyone’s ideas after the league is created. Do not write anything dangerous, degrading, sexual, discriminatory, illegal, or financially coercive.", proposal: true },
+  { key: "safety", title: "Agree to the league safety rules", help: "Punishments must be harmless, legal, and voluntary. Dangerous, degrading, sexual, discriminatory, or financially coercive ideas are not allowed. Signing a league agreement does not remove anyone’s right to decline or leave.", choices: [["confirmed", "I agree to keep punishments safe and voluntary", "Your group can only use ideas everyone has approved."]] }
 ];
 
 function show(id) { $(id).hidden = false; }
@@ -121,15 +121,33 @@ function renderSetup() {
     const label = document.createElement("label"); label.textContent = "League name";
     const input = document.createElement("input"); input.id = "setup-input"; input.maxLength = 60; input.required = true; input.placeholder = question.input; input.value = state.setup.answers[question.key] || "";
     label.append(input); target.append(label); input.focus();
+  } else if (question.proposal) {
+    const label = document.createElement("label"); label.textContent = "Your punishment proposal";
+    const input = document.createElement("textarea"); input.id = "setup-proposal"; input.maxLength = 240; input.minLength = 5; input.required = true; input.autocomplete = "off"; input.placeholder = "Write a harmless, voluntary punishment your group can review."; input.value = state.setup.answers[question.key] || "";
+    label.append(input);
+    const rules = text("p", "5–240 characters. Your group reviews ideas; BragBoard does not automatically decide whether an idea is safe.", "hint");
+    const attestation = document.createElement("label"); attestation.className = "check";
+    const checkbox = document.createElement("input"); checkbox.id = "setup-proposal-attestation"; checkbox.type = "checkbox"; checkbox.checked = Boolean(state.setup.answers.punishment_attested);
+    attestation.append(checkbox, document.createTextNode(" I confirm this proposal is harmless, legal, and voluntary."));
+    target.append(label, rules, attestation); input.focus();
   } else {
     const choices = document.createElement("div"); choices.className = "wizard-options";
     for (const [value, label, explanation] of question.choices) {
-      const card = button("", `option-card${state.setup.answers[question.key] === value ? " selected" : ""}`);
+      const selected = question.multi ? (state.setup.answers[question.key] || []).includes(value) : state.setup.answers[question.key] === value;
+      const card = button("", `option-card${selected ? " selected" : ""}`);
       card.dataset.setupChoice = value;
       const copy = document.createElement("span"); copy.className = "choice-copy";
       copy.append(text("strong", label), text("span", explanation, "choice-explanation"));
-      card.append(copy); card.setAttribute("aria-pressed", state.setup.answers[question.key] === value ? "true" : "false");
-      card.addEventListener("click", () => { state.setup.answers[question.key] = value; renderSetup(); });
+      if (question.multi) copy.append(text("span", selected ? "Selected ✓" : "Select this sport", "choice-selection"));
+      card.append(copy); card.setAttribute("aria-pressed", selected ? "true" : "false");
+      card.addEventListener("click", () => {
+        if (question.multi) {
+          const selectedSports = new Set(state.setup.answers[question.key] || []);
+          selectedSports.has(value) ? selectedSports.delete(value) : selectedSports.add(value);
+          state.setup.answers[question.key] = [...selectedSports];
+        } else state.setup.answers[question.key] = value;
+        renderSetup();
+      });
       choices.append(card);
     }
     target.append(choices);
@@ -142,13 +160,29 @@ async function nextSetup(event) {
   event.preventDefault();
   const question = setupQuestions[state.setup.step];
   if (question.input) state.setup.answers[question.key] = $("setup-input").value.trim();
-  if (!state.setup.answers[question.key]) return message("setup-message", "Choose an answer before continuing.", true);
+  if (question.proposal) {
+    state.setup.answers[question.key] = $("setup-proposal").value.trim();
+    state.setup.answers.punishment_attested = $("setup-proposal-attestation").checked;
+    if (state.setup.answers[question.key].length < 5) return message("setup-message", "Write a punishment proposal of at least 5 characters before continuing.", true);
+    if (!state.setup.answers.punishment_attested) return message("setup-message", "Confirm that your proposal is harmless, legal, and voluntary before continuing.", true);
+  }
+  const answer = state.setup.answers[question.key];
+  if (!answer || (Array.isArray(answer) && !answer.length)) return message("setup-message", question.multi ? "Choose at least one sport before continuing." : "Choose an answer before continuing.", true);
   if (state.setup.step < setupQuestions.length - 1) { state.setup.step += 1; renderSetup(); return; }
   disabled($("setup-next"), true);
-  const { data, error } = await state.client.rpc("create_league", { league_name: state.setup.answers.name, league_settings: state.setup.answers });
+  let data, error;
+  try { ({ data, error } = await state.client.rpc("create_league", { league_name: state.setup.answers.name, league_settings: state.setup.answers })); }
+  catch (failure) { error = failure; }
   disabled($("setup-next"), false);
-  if (error) return message("league-message", error.message, true);
-  hide("setup-panel"); toast("League created. Share its invite code when you open it."); await loadHome(); await openLeague(data);
+  if (error || !data) return message("setup-message", error?.message || "BragBoard could not create the league. Try again, then share this message with the host if it continues.", true);
+  const proposalResult = await state.client.from("punishment_proposals").insert({ league_id: data, proposer_id: state.user.id, body: state.setup.answers.punishment_proposal }).select("id").maybeSingle();
+  let proposalWarning = proposalResult.error?.message || "";
+  if (!proposalWarning && proposalResult.data?.id) {
+    const approval = await state.client.from("proposal_approvals").insert({ proposal_id: proposalResult.data.id, user_id: state.user.id });
+    proposalWarning = approval.error?.message || "";
+  }
+  hide("setup-panel"); await loadHome(); await openLeague(data);
+  toast(proposalWarning ? `League created, but your punishment proposal needs to be added from the league page: ${proposalWarning}` : "League created. Your punishment proposal is ready for group approval.");
 }
 function previousSetup() {
   if (!state.setup.step) return;
@@ -282,7 +316,7 @@ async function submitProposal(event) {
   const body = $("proposal-text").value.trim();
   const { error } = await state.client.from("punishment_proposals").insert({ league_id: state.league.id, proposer_id: state.user.id, body });
   if (error) return toast(error.message);
-  event.target.reset(); toast("For-fun challenge submitted for everyone’s approval."); loadLeague();
+  event.target.reset(); toast("Punishment submitted for everyone’s approval."); loadLeague();
 }
 async function copyInvite() {
   try { await navigator.clipboard.writeText(state.league.invite_code); toast(`Invite code ${state.league.invite_code} copied.`); } catch { toast(`Invite code: ${state.league.invite_code}`); }

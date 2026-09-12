@@ -15,9 +15,10 @@ const check = (condition, description) => {
 
 check(html.includes('id="auth-form"') && html.includes('id="create-league-form"'), "provides account and private-league entry points");
 check((app.match(/key: "/g) || []).length === 10 && app.includes("STEP") && app.includes("setupQuestions.length"), "keeps the accurately numbered ten-question league setup");
-check(app.includes("Everyone decides together") && app.includes("I agree to keep challenges safe and voluntary"), "keeps first-time rule explanations in setup");
+check(app.includes("Everyone decides together") && app.includes("I agree to keep punishments safe and voluntary"), "keeps first-time rule explanations in setup");
 check(app.includes("CREATE YOUR PRIVATE PICK") && app.includes("choice-explanation"), "introduces Step 1 and explains every answer directly");
-check(!/snake draft|spin a wheel/i.test(app), "uses plain-language challenge choices without a snake draft");
+check(app.includes("multi: true") && app.includes("Choose at least one sport") && app.includes("setup-proposal"), "lets a creator select multiple sports and write a punishment during setup");
+check(!/snake draft|spin a wheel|take turns choosing|rotating turns/i.test(app), "removes rotating-turn selection from the punishment setup");
 check(wizardCss.includes("[hidden]{display:none !important}"), "shows exactly one focused application state at a time");
 check(html.includes('id="lock-picks"') && app.includes("lock_week_picks"), "uses a database lock function for picks");
 check(app.includes("chosen_team") && app.includes("selected !== state.games.length"), "requires one displayed-game choice before locking");
@@ -31,4 +32,4 @@ check(sql.includes("award_type in ('weekly', 'monthly')") && /'weekly', period, 
 check(!/service[_-]?role\s*[:=]\s*['"][^'"]+/.test(config), "contains no service-role credential");
 check(!/(stripe|venmo|cashapp|payment intent)/i.test(html + "\n" + app + "\n" + sql), "contains no payment collection integration");
 
-console.log("15 BragBoard live-foundation checks passed. They do not execute a Supabase project or browser UI.");
+console.log("18 BragBoard live-foundation checks passed. They do not execute a Supabase project or browser UI.");
