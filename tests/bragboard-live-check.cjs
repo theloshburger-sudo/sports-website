@@ -15,7 +15,9 @@ const check = (condition, description) => {
 
 check(html.includes('id="auth-form"') && html.includes('id="create-league-form"'), "provides account and private-league entry points");
 check((app.match(/key: "/g) || []).length === 10 && app.includes("STEP") && app.includes("setupQuestions.length"), "keeps the accurately numbered ten-question league setup");
-check(app.includes("Everyone votes") && app.includes("I agree to these rules"), "keeps first-time rule explanations in setup");
+check(app.includes("Everyone decides together") && app.includes("I agree to keep challenges safe and voluntary"), "keeps first-time rule explanations in setup");
+check(app.includes("CREATE YOUR PRIVATE PICK") && app.includes("choice-explanation"), "introduces Step 1 and explains every answer directly");
+check(!/snake draft|spin a wheel/i.test(app), "uses plain-language challenge choices without a snake draft");
 check(wizardCss.includes("[hidden]{display:none !important}"), "shows exactly one focused application state at a time");
 check(html.includes('id="lock-picks"') && app.includes("lock_week_picks"), "uses a database lock function for picks");
 check(app.includes("chosen_team") && app.includes("selected !== state.games.length"), "requires one displayed-game choice before locking");

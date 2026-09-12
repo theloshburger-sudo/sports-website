@@ -2,16 +2,16 @@
 const $ = (id) => document.getElementById(id);
 const state = { client: null, user: null, profile: null, leagues: [], league: null, member: null, week: null, games: [], picks: new Map(), signingUp: false, setup: { step: 0, answers: {} } };
 const setupQuestions = [
-  { key: "name", title: "Name your league", help: "This is the private name friends see after joining.", input: "Friday Night Picks" },
-  { key: "authority", title: "Who settles settings?", help: "Everyone Votes means every member agrees; Host Decides lets the host change league settings, but never bypass unanimous punishment approval.", choices: [["everyone", "Everyone votes"], ["host", "League host decides"]] },
-  { key: "competitions", title: "What are you picking?", help: "Choose a starting competition. Hosts can add only fixtures they are entitled to use.", choices: [["mixed", "Mixed sports"], ["basketball", "Basketball"], ["football", "Football"], ["soccer", "Soccer"]] },
-  { key: "winner_period", title: "When do you celebrate?", help: "Weekly winners are for the current card; monthly leaders are based on scored picks for the calendar month.", choices: [["weekly", "Weekly winner"], ["monthly", "Monthly winner"]] },
-  { key: "punishment_mode", title: "How should punishments work?", help: "Shared means one approved idea for the group outcome; personal means an approved idea can be assigned to an individual. Every idea must be voluntary and unanimous.", choices: [["shared", "One shared punishment"], ["personal", "Personal punishments"]] },
-  { key: "selection", title: "How are approved ideas chosen?", help: "Vote uses member ballots, wheel is a disclosed random draw, and snake draft rotates selection order. These choices are recorded for your group.", choices: [["vote", "Group vote"], ["wheel", "Spin a wheel"], ["draft", "Snake draft"]] },
-  { key: "loser_scope", title: "Who is in the outcome?", help: "Choose whether the final place or the bottom three may opt into the group’s approved outcome.", choices: [["last", "Last place"], ["bottom_three", "Bottom three"]] },
-  { key: "coins", title: "Use BragBoard coins?", help: "Coins are non-cash scorekeeping points. Weekly winners get 10 and monthly winners get 20; coins cannot be bought, sold, transferred, or redeemed.", choices: [["on", "Use non-cash coins"], ["off", "No coins"]] },
-  { key: "lock_rule", title: "Confirm the pick rule", help: "Every player must choose exactly one winner for every displayed game. Once they lock picks, those picks stay visible and cannot be changed.", choices: [["confirmed", "I understand pick lock-in"]] },
-  { key: "safety", title: "Confirm your group agreement", help: "Punishments must be harmless and voluntary. Dangerous, degrading, sexual, illegal, or financially coercive ideas are not allowed. You can always opt out.", choices: [["confirmed", "I agree to these rules"]] }
+  { key: "name", title: "What should your league be called?", help: "Choose a name your friends will recognize. You can change it later.", input: "Sunday Pick Crew" },
+  { key: "authority", title: "Who should manage your league’s settings?", help: "This controls regular settings such as sports and competitions. For-fun challenges always require approval from everyone.", choices: [["everyone", "Everyone decides together", "All members must agree before a regular league setting changes."], ["host", "The host manages settings", "The person who created the league can update regular settings."]] },
+  { key: "competitions", title: "Which sports will your group pick?", help: "Choose what you want to start with. The host adds that week’s games, and this setting can be changed later.", choices: [["mixed", "Multiple sports", "Mix games from different sports in the same league."], ["basketball", "Basketball", "Start with basketball games only."], ["football", "Football", "Start with football games only."], ["soccer", "Soccer", "Start with soccer matches only."]] },
+  { key: "winner_period", title: "How often should your league crown a winner?", help: "Choose how long results should count before a new competition begins.", choices: [["weekly", "Every week", "Crown a new winner based on that week’s completed games."], ["monthly", "Every month", "Crown a winner based on all scored picks during the calendar month."], ["weekly_monthly", "Weekly and monthly", "Celebrate weekly winners while also tracking a monthly champion."]] },
+  { key: "challenge_mode", title: "Should your league use one shared for-fun challenge or separate challenges?", help: "For-fun challenges are optional, harmless challenges for friends. Every idea needs approval from everyone, and anyone can choose not to participate.", choices: [["shared", "One shared for-fun challenge", "Everyone who participates receives the same approved challenge."], ["separate", "Separate for-fun challenges", "Different approved challenges can be assigned to individual participants."]] },
+  { key: "selection", title: "How should the final challenge be chosen?", help: "First, everyone must approve the available ideas. Then your group uses one of these methods to choose among them.", choices: [["vote", "Let the group vote", "Members vote, and the most popular approved idea wins."], ["random", "Choose randomly", "BragBoard randomly selects one of the ideas everyone has approved."], ["turns", "Take turns choosing", "Members choose approved ideas in a rotating order."]] },
+  { key: "loser_scope", title: "Who can be invited to complete the challenge?", help: "This determines who is eligible based on the standings. Participating is always voluntary.", choices: [["last", "The last-place player", "Only the person at the bottom of the standings is invited."], ["bottom_three", "The bottom three players", "The three lowest-ranked players are invited."]] },
+  { key: "coins", title: "Should winners earn BragBoard Coins?", help: "BragBoard Coins are in-app points for bragging rights. They are not real money and cannot be purchased, transferred, sold, or redeemed.", choices: [["on", "Yes, award BragBoard Coins", "Weekly winners earn 10 coins and monthly winners earn 20."], ["off", "No, use the leaderboard only", "Track wins and standings without awarding coins."]] },
+  { key: "lock_rule", title: "Make sure you understand how picks lock", help: "Each member chooses one winner for every game. Picks can change until the member locks their card; after a pick locks, it cannot be edited.", choices: [["confirmed", "I understand—locked picks are final", "Every pick must be locked before its game begins. After lock-in, it stays final."]] },
+  { key: "safety", title: "Agree to the league safety rules", help: "For-fun challenges must be harmless, legal, and voluntary. Dangerous, degrading, sexual, discriminatory, or financially coercive ideas are not allowed. Anyone can decline at any time.", choices: [["confirmed", "I agree to keep challenges safe and voluntary", "Your group can only use ideas everyone has approved."]] }
 ];
 
 function show(id) { $(id).hidden = false; }
@@ -111,6 +111,11 @@ function renderSetup() {
   const question = setupQuestions[state.setup.step], target = $("setup-question");
   clear(target); $("setup-progress").textContent = `STEP ${state.setup.step + 1} OF ${setupQuestions.length}`;
   $("progress-fill").style.width = `${((state.setup.step + 1) / setupQuestions.length) * 100}%`;
+  if (state.setup.step === 0) {
+    const intro = document.createElement("div"); intro.className = "setup-intro";
+    intro.append(text("p", "CREATE YOUR PRIVATE PICK’EM LEAGUE", "eyebrow"), text("p", "Invite friends, pick the winners of real games, and compete for weekly and monthly bragging rights. There’s no betting or real money. You can change most settings later."));
+    target.append(intro);
+  }
   target.append(text("h2", question.title), text("p", question.help, "hint"));
   if (question.input) {
     const label = document.createElement("label"); label.textContent = "League name";
@@ -118,9 +123,12 @@ function renderSetup() {
     label.append(input); target.append(label); input.focus();
   } else {
     const choices = document.createElement("div"); choices.className = "wizard-options";
-    for (const [value, label] of question.choices) {
+    for (const [value, label, explanation] of question.choices) {
       const card = button("", `option-card${state.setup.answers[question.key] === value ? " selected" : ""}`);
-      card.dataset.setupChoice = value; card.append(text("strong", label), text("span", "?", "choice-help")); card.setAttribute("aria-pressed", state.setup.answers[question.key] === value ? "true" : "false");
+      card.dataset.setupChoice = value;
+      const copy = document.createElement("span"); copy.className = "choice-copy";
+      copy.append(text("strong", label), text("span", explanation, "choice-explanation"));
+      card.append(copy); card.setAttribute("aria-pressed", state.setup.answers[question.key] === value ? "true" : "false");
       card.addEventListener("click", () => { state.setup.answers[question.key] = value; renderSetup(); });
       choices.append(card);
     }
@@ -187,7 +195,7 @@ async function loadLeague() {
 }
 function renderGames() {
   const list = $("games"); clear(list);
-  if (!state.games.length) list.append(text("p", isHost() ? "Add this week’s first illustrative fixture above." : "The host has not added fixtures yet.", "hint"));
+  if (!state.games.length) list.append(text("p", isHost() ? "Add this week’s first illustrative game above." : "The host has not added games yet.", "hint"));
   const now = Date.now();
   for (const game of state.games) {
     const card = document.createElement("article"); card.className = "game";
@@ -255,7 +263,7 @@ async function addGame(event) {
   if (game.home_team === game.away_team) return toast("Choose two different teams.");
   const { error } = await state.client.from("games").insert(game);
   if (error) return toast(error.message);
-  event.target.reset(); toast("Illustrative fixture added."); loadLeague();
+  event.target.reset(); toast("Illustrative game added."); loadLeague();
 }
 async function finalizeWeek() {
   if (!state.week || !confirm("Finalize this fully scored week? Locked picks will be scored and tied weekly leaders receive 10 non-cash coins.")) return;
@@ -274,7 +282,7 @@ async function submitProposal(event) {
   const body = $("proposal-text").value.trim();
   const { error } = await state.client.from("punishment_proposals").insert({ league_id: state.league.id, proposer_id: state.user.id, body });
   if (error) return toast(error.message);
-  event.target.reset(); toast("Proposal submitted for unanimous approval."); loadLeague();
+  event.target.reset(); toast("For-fun challenge submitted for everyone’s approval."); loadLeague();
 }
 async function copyInvite() {
   try { await navigator.clipboard.writeText(state.league.invite_code); toast(`Invite code ${state.league.invite_code} copied.`); } catch { toast(`Invite code: ${state.league.invite_code}`); }

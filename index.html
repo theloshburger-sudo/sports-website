@@ -7,6 +7,7 @@
   <title>BragBoard — Call it. Own it.</title>
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="wizard.css">
+  <link rel="stylesheet" href="onboarding-copy.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
   <script src="supabase/config.js" defer></script>
   <script src="app.js" defer></script>
@@ -36,7 +37,7 @@
         <p class="eyebrow">PICK EVERY GAME. OWN THE GROUP CHAT.</p>
         <h1>Call it.<br>Own it.</h1>
         <p>Make one winner pick for every game before kickoff. Your private league scores the week and the month—no roster management and no money on the line.</p>
-        <details><summary>How BragBoard works</summary><p>Start or join a private league. A host adds the week’s fixtures. Every member locks one winner per game before kickoff. Hosts record results, then standings update from locked picks. Coins are in-app points only: they cannot be bought, transferred, or redeemed.</p></details>
+        <details><summary>How BragBoard works</summary><p>Start or join a private league. A host adds this week’s games. Every member locks one winner per game before kickoff. Hosts record results, then standings update from locked picks. Coins are in-app points only: they cannot be bought, transferred, or redeemed.</p></details>
       </div>
       <form id="auth-form" class="panel auth-card">
         <p class="eyebrow">PRIVATE LEAGUE ACCESS</p><h2>Get in the game.</h2>
@@ -71,11 +72,11 @@
     <section id="game-panel" hidden>
       <div class="league-nav"><button id="back-to-leagues" class="ghost">← All leagues</button><p id="league-title" class="eyebrow"></p><button id="copy-invite" class="ghost" hidden>Copy invite</button></div>
       <div class="topline"><div><p class="eyebrow" id="week-label">CURRENT WEEK</p><h1>Make your picks.</h1><p id="pick-rule">Choose exactly one winner for every listed game. Once locked, your choices remain visible and cannot be changed.</p></div><p id="pick-count" class="rank">0 / 0</p></div>
-      <div id="host-tools" class="panel host-tools" hidden><p class="eyebrow">HOST CONTROLS</p><h2>Add an illustrative fixture</h2><form id="game-form" class="game-form"><label>Sport <input id="game-sport" required maxlength="30" placeholder="NBA"></label><label>Home team <input id="home-team" required maxlength="50"></label><label>Away team <input id="away-team" required maxlength="50"></label><label>Kickoff <input id="kickoff-at" type="datetime-local" required></label><button class="ghost" type="submit">Add game</button></form><div class="host-actions"><button id="finalize-week" class="ghost" type="button">Finalize scored week · award 10 coins</button><button id="award-month" class="ghost" type="button">Award monthly leaders · 20 coins</button></div><p class="hint">Fixtures are host-added and illustrative until a licensed sports-data provider is connected. Coin awards are non-cash points only.</p></div>
+      <div id="host-tools" class="panel host-tools" hidden><p class="eyebrow">HOST CONTROLS</p><h2>Add an illustrative game</h2><form id="game-form" class="game-form"><label>Sport <input id="game-sport" required maxlength="30" placeholder="NBA"></label><label>Home team <input id="home-team" required maxlength="50"></label><label>Away team <input id="away-team" required maxlength="50"></label><label>Kickoff <input id="kickoff-at" type="datetime-local" required></label><button class="ghost" type="submit">Add game</button></form><div class="host-actions"><button id="finalize-week" class="ghost" type="button">Finalize scored week · award 10 coins</button><button id="award-month" class="ghost" type="button">Award monthly leaders · 20 coins</button></div><p class="hint">Games are host-added and illustrative until a licensed sports-data provider is connected. Coin awards are non-cash points only.</p></div>
       <section id="games" class="games"></section><button id="lock-picks" class="primary lock-button" disabled>Lock my picks</button><p id="pick-message" class="message" role="status"></p>
       <div class="two-up">
         <section class="panel"><p class="eyebrow">MONTHLY TABLE</p><h2>Leaderboard</h2><ol id="leaderboard" class="leaderboard"></ol></section>
-        <section class="panel"><p class="eyebrow">VOLUNTARY PUNISHMENTS <button class="help" data-help="Every proposed punishment must be harmless, voluntary, and approved unanimously before the month begins. Do not use dangerous, degrading, sexual, illegal, or financially coercive ideas." aria-label="How do punishments work?">?</button></p><h2>Group agreements</h2><form id="proposal-form"><label>Propose a punishment <textarea id="proposal-text" maxlength="240" minlength="5" autocomplete="off" placeholder="Write a harmless, voluntary proposal." required></textarea></label><label class="check"><input id="proposal-attestation" type="checkbox" required> I confirm this is harmless and voluntary.</label><button class="ghost" type="submit">Submit for approval</button></form><div id="proposals"></div></section>
+        <section class="panel"><p class="eyebrow">FOR-FUN CHALLENGES</p><h2>Group agreements</h2><p class="hint">Every idea must be harmless, voluntary, and approved unanimously before the month begins. Anyone can decline at any time.</p><form id="proposal-form"><label>Propose a for-fun challenge <textarea id="proposal-text" maxlength="240" minlength="5" autocomplete="off" placeholder="Write a harmless, voluntary challenge idea." required></textarea></label><label class="check"><input id="proposal-attestation" type="checkbox" required> I confirm this is harmless and voluntary.</label><button class="ghost" type="submit">Submit for approval</button></form><div id="proposals"></div></section>
       </div>
     </section>
   </main>

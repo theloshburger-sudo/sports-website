@@ -19,7 +19,7 @@ After STOP 1, help the student propose and approve the six TARGET lines and one 
 
 ## My standing rule
 
-A player must select exactly one winner for every displayed game before locking picks; after lock-in, the choices remain visible but cannot be changed. Punishments require unanimous approval before the month begins, remain voluntary, and cannot involve dangerous, degrading, sexual, illegal, or financially coercive acts. Assignments and scoring settings lock before play. Coins have no cash value and cannot be purchased, transferred, or redeemed; power-ups must be chosen before pick lock-in. Real leagues use authenticated members and row-level database rules; never expose a service-role key in browser code.
+A player must select exactly one winner for every displayed game before locking picks; after lock-in, the choices remain visible but cannot be changed. For-fun challenges require unanimous approval before the month begins, remain voluntary, and cannot involve dangerous, degrading, sexual, illegal, discriminatory, or financially coercive acts. Challenge participation is always optional. Assignments and scoring settings lock before play. Coins have no cash value and cannot be purchased, transferred, or redeemed; power-ups must be chosen before pick lock-in. Real leagues use authenticated members and row-level database rules; never expose a service-role key in browser code.
 
 ## Workflow
 
