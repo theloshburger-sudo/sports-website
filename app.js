@@ -57,6 +57,7 @@ function bindEvents() {
   $("join-league-form").addEventListener("submit", joinLeague);
   $("back-to-leagues").addEventListener("click", showLeagues);
   $("copy-invite").addEventListener("click", copyInvite);
+  $("guide-copy-invite").addEventListener("click", copyInvite);
   $("game-form").addEventListener("submit", addGame);
   $("finalize-week").addEventListener("click", finalizeWeek);
   $("award-month").addEventListener("click", awardMonth);
@@ -87,7 +88,7 @@ async function loadHome() {
   const { data: profile } = await state.client.from("profiles").select("display_name").eq("id", state.user.id).maybeSingle();
   state.profile = profile || { display_name: state.user.email };
   $("welcome").textContent = `Welcome back, ${state.profile.display_name}.`;
-  const { data, error } = await state.client.from("league_members").select("league_id, role, coins, leagues(id,name,invite_code,created_at)").eq("user_id", state.user.id).order("joined_at", { ascending: false });
+  const { data, error } = await state.client.from("league_members").select("league_id, role, coins, leagues(id,name,invite_code,settings,created_at)").eq("user_id", state.user.id).order("joined_at", { ascending: false });
   if (error) return toast(error.message);
   state.leagues = data || [];
   $("coin-count").textContent = state.leagues.reduce((sum, m) => sum + (m.coins || 0), 0);
@@ -203,6 +204,10 @@ async function openLeague(leagueId) {
   $("league-title").textContent = state.league.name;
   $("copy-invite").hidden = !isHost();
   $("host-tools").hidden = !isHost();
+  const sports = state.league.settings?.sports || [];
+  $("guide-sports").textContent = sports.length ? `You chose ${sports.join(", ")}. Add games from those sports, with two teams and the actual start time.` : "Add the games your group chose in setup. Include two teams and the game’s actual start time.";
+  const sportOptions = $("sports-options"); clear(sportOptions);
+  sports.forEach((sport) => { const option = document.createElement("option"); option.value = sport[0].toUpperCase() + sport.slice(1); sportOptions.append(option); });
   await loadLeague();
 }
 async function loadLeague() {
@@ -220,7 +225,7 @@ async function loadLeague() {
     state.client.from("games").select("*").eq("week_id", week.id).order("kickoff_at"),
     state.client.from("picks").select("game_id, chosen_team, locked_at").eq("user_id", state.user.id),
     state.client.rpc("league_leaderboard", { target_league: state.league.id }),
-    state.client.from("punishment_proposals").select("id,body,status,proposer:profiles(display_name),proposal_approvals(user_id)").eq("league_id", state.league.id).order("created_at")
+    state.client.from("punishment_proposals").select("id,body,status,proposer:profiles!punishment_proposals_proposer_id_fkey(display_name),proposal_approvals(user_id)").eq("league_id", state.league.id).order("created_at")
   ]);
   if (gamesResponse.error || picksResponse.error || boardResponse.error || proposalResponse.error) return toast((gamesResponse.error || picksResponse.error || boardResponse.error || proposalResponse.error).message);
   state.games = gamesResponse.data || [];
@@ -229,7 +234,12 @@ async function loadLeague() {
 }
 function renderGames() {
   const list = $("games"); clear(list);
-  if (!state.games.length) list.append(text("p", isHost() ? "Add this week’s first illustrative game above." : "The host has not added games yet.", "hint"));
+  const waitingForGames = !state.games.length;
+  $("host-start-guide").hidden = !isHost() || !waitingForGames;
+  $("host-actions").hidden = waitingForGames || !isHost();
+  $("game-heading").textContent = isHost() && waitingForGames ? "Set up your first week." : "Make your picks.";
+  $("pick-rule").textContent = isHost() && waitingForGames ? "Start with the three steps below. Your friends can make picks after you add the games." : "Choose exactly one winner for every listed game. Once locked, your choices remain visible and cannot be changed.";
+  if (waitingForGames) list.append(text("p", isHost() ? "No games yet — use Step 2 above to add the first one." : "The host is adding this week’s games. Check back when the picks are ready.", "hint"));
   const now = Date.now();
   for (const game of state.games) {
     const card = document.createElement("article"); card.className = "game";

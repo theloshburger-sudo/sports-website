@@ -23,6 +23,7 @@ check(wizardCss.includes("[hidden]{display:none !important}"), "shows exactly on
 check(html.includes('id="lock-picks"') && app.includes("lock_week_picks"), "uses a database lock function for picks");
 check(app.includes("chosen_team") && app.includes("selected !== state.games.length"), "requires one displayed-game choice before locking");
 check(app.includes("record_game_result") && app.includes("finalize_week"), "keeps result recording and weekly awards host-mediated");
+check(app.includes("punishment_proposals_proposer_id_fkey") && html.includes("Get your first week ready in three steps"), "uses the explicit proposal relationship and gives new hosts ordered next steps");
 check(app.includes("punishment_proposals") && app.includes("proposal_approvals"), "keeps voluntary-punishment proposals and approvals in the app");
 check(html.includes("no money on the line") && html.includes("does not collect payments"), "discloses the non-cash boundary");
 check(sql.includes("enable row level security") && sql.includes("public.is_member"), "enables member-scoped row-level access");
