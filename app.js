@@ -4,7 +4,7 @@ const state = { client: null, user: null, profile: null, leagues: [], league: nu
 const setupQuestions = [
   { key: "name", title: "What should your league be called?", help: "Choose a name your friends will recognize. You can change it later.", input: "Sunday Pick Crew" },
   { key: "authority", title: "Who should manage your league’s settings?", help: "This controls regular settings such as sports and competitions. Punishments always require approval from everyone.", choices: [["everyone", "Everyone decides together", "All members must agree before a regular league setting changes."], ["host", "The host manages settings", "The person who created the league can update regular settings."]] },
-  { key: "sports", title: "Which sports will your group pick?", help: "Choose one or more sports to start with. The host adds that week’s games, and these choices can be changed later.", multi: true, choices: [["basketball", "Basketball", "Add basketball games to your league."], ["football", "Football", "Add football games to your league."], ["soccer", "Soccer", "Add soccer matches to your league."]] },
+  { key: "sports", title: "Which sports will your group pick?", help: "Choose one or more sports to start with. BragBoard loads this week’s real men’s professional games for these choices, and they can be changed later.", multi: true, choices: [["basketball", "Basketball", "Load NBA games only."], ["football", "Football", "Load NFL games only."], ["soccer", "Soccer", "Load Premier League, LaLiga, Bundesliga, Champions League, and Europa League games only."]] },
   { key: "winner_period", title: "How often should your league crown a winner?", help: "Choose how long results should count before a new competition begins.", choices: [["weekly", "Every week", "Crown a new winner based on that week’s completed games."], ["monthly", "Every month", "Crown a winner based on all scored picks during the calendar month."], ["weekly_monthly", "Weekly and monthly", "Celebrate weekly winners while also tracking a monthly champion."]] },
   { key: "punishment_mode", title: "Should your league use one shared punishment or separate punishments?", help: "Punishments are optional, harmless social consequences for the group. Every idea needs approval from everyone, and anyone may opt out or leave the league.", choices: [["shared", "One shared punishment", "The group uses the same approved punishment for the people assigned by the standings."], ["separate", "Separate punishments", "The group can approve and assign different punishments to individual players."]] },
   { key: "selection", title: "How should the final punishment be chosen?", help: "First, everyone must approve the available ideas. Then your group chooses among them.", choices: [["vote", "Let the group vote", "Members vote, and the most popular approved idea wins."], ["random", "Choose randomly", "BragBoard randomly selects one of the ideas everyone has approved."]] },
@@ -58,7 +58,7 @@ function bindEvents() {
   $("back-to-leagues").addEventListener("click", showLeagues);
   $("copy-invite").addEventListener("click", copyInvite);
   $("guide-copy-invite").addEventListener("click", copyInvite);
-  $("game-form").addEventListener("submit", addGame);
+  $("sync-games").addEventListener("click", syncGames);
   $("finalize-week").addEventListener("click", finalizeWeek);
   $("award-month").addEventListener("click", awardMonth);
   $("lock-picks").addEventListener("click", lockPicks);
@@ -205,9 +205,9 @@ async function openLeague(leagueId) {
   $("copy-invite").hidden = !isHost();
   $("host-tools").hidden = !isHost();
   const sports = state.league.settings?.sports || [];
-  $("guide-sports").textContent = sports.length ? `You chose ${sports.join(", ")}. Add games from those sports, with two teams and the actual start time.` : "Add the games your group chose in setup. Include two teams and the game’s actual start time.";
-  const sportOptions = $("sports-options"); clear(sportOptions);
-  sports.forEach((sport) => { const option = document.createElement("option"); option.value = sport[0].toUpperCase() + sport.slice(1); sportOptions.append(option); });
+  const selectedSports = sports.length ? sports.map((sport) => sport[0].toUpperCase() + sport.slice(1)).join(", ") : "the sports selected in setup";
+  $("guide-sports").textContent = `You chose ${selectedSports}. BragBoard loads their real men’s professional games for this week.`;
+  $("sync-copy").textContent = `Load real men’s professional ${selectedSports} games for the current week. Women’s competitions are not included.`;
   await loadLeague();
 }
 async function loadLeague() {
@@ -239,7 +239,7 @@ function renderGames() {
   $("host-actions").hidden = waitingForGames || !isHost();
   $("game-heading").textContent = isHost() && waitingForGames ? "Set up your first week." : "Make your picks.";
   $("pick-rule").textContent = isHost() && waitingForGames ? "Start with the three steps below. Your friends can make picks after you add the games." : "Choose exactly one winner for every listed game. Once locked, your choices remain visible and cannot be changed.";
-  if (waitingForGames) list.append(text("p", isHost() ? "No games yet — use Step 2 above to add the first one." : "The host is adding this week’s games. Check back when the picks are ready.", "hint"));
+  if (waitingForGames) list.append(text("p", isHost() ? "No games yet — use Step 2 above to load the selected real games." : "The host is loading this week’s games. Check back when the picks are ready.", "hint"));
   const now = Date.now();
   for (const game of state.games) {
     const card = document.createElement("article"); card.className = "game";
@@ -301,13 +301,13 @@ async function lockPicks() {
   if (error) return message("pick-message", error.message, true);
   message("pick-message", "Your card is locked. Your picks stay visible, but cannot be changed."); await loadLeague();
 }
-async function addGame(event) {
-  event.preventDefault();
-  const game = { week_id: state.week.id, sport: $("game-sport").value.trim(), home_team: $("home-team").value.trim(), away_team: $("away-team").value.trim(), kickoff_at: new Date($("kickoff-at").value).toISOString() };
-  if (game.home_team === game.away_team) return toast("Choose two different teams.");
-  const { error } = await state.client.from("games").insert(game);
-  if (error) return toast(error.message);
-  event.target.reset(); toast("Illustrative game added."); loadLeague();
+async function syncGames() {
+  if (!state.week) return message("sync-message", "Open a current week before loading games.", true);
+  const trigger = $("sync-games"); disabled(trigger, true); message("sync-message", "Loading the selected real games…");
+  const { data, error } = await state.client.functions.invoke("sync-games", { body: { leagueId: state.league.id, weekId: state.week.id } });
+  disabled(trigger, false);
+  if (error) return message("sync-message", "Could not load games. The host needs to finish connecting the sports-data provider.", true);
+  message("sync-message", data?.message || "This week’s games are ready."); await loadLeague();
 }
 async function finalizeWeek() {
   if (!state.week || !confirm("Finalize this fully scored week? Locked picks will be scored and tied weekly leaders receive 10 non-cash coins.")) return;

@@ -41,12 +41,15 @@ create table if not exists public.game_weeks (
 create table if not exists public.games (
   id uuid primary key default gen_random_uuid(),
   week_id uuid not null references public.game_weeks(id) on delete cascade,
+  provider text not null default 'manual',
+  provider_game_id text,
   sport text not null check (char_length(sport) between 1 and 30),
   home_team text not null check (char_length(home_team) between 1 and 50),
   away_team text not null check (char_length(away_team) between 1 and 50),
   kickoff_at timestamptz not null,
   winner text check (winner is null or char_length(winner) between 1 and 50),
   created_at timestamptz not null default now(),
+  unique (week_id, provider, provider_game_id),
   check (home_team <> away_team),
   check (winner is null or winner = home_team or winner = away_team)
 );
