@@ -19,7 +19,7 @@ After STOP 1, help the student propose and approve the six TARGET lines and one 
 
 ## My standing rule
 
-A player must select exactly one winner for every displayed game before locking picks; after lock-in, the choices remain visible but cannot be changed.
+A player must select exactly one winner for every displayed game before locking picks; after lock-in, the choices remain visible but cannot be changed. Punishments require unanimous approval before the month begins, remain voluntary, and cannot involve dangerous, degrading, sexual, illegal, or financially coercive acts. Assignments and scoring settings lock before play. Coins have no cash value and cannot be purchased, transferred, or redeemed; power-ups must be chosen before pick lock-in.
 
 ## Workflow
 
