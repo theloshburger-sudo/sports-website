@@ -2,16 +2,16 @@
 const $ = (id) => document.getElementById(id);
 const state = { client: null, user: null, profile: null, leagues: [], league: null, member: null, week: null, games: [], picks: new Map(), signingUp: false, setup: { step: 0, answers: {} } };
 const setupQuestions = [
-  { key: "authority", title: "Who manages your league’s regular settings?", help: "Choose how your group changes everyday league settings after setup: sports, winner period, and which games appear. This never gives anyone control over punishments—every punishment still needs approval from every member.", choices: [["everyone", "Everyone decides together", "Every member must agree before a regular league setting changes. Use this when your group wants every decision to be shared."], ["host", "The host manages regular settings", "The creator can update sports, winner period, and games without a group vote. Punishments still require everyone’s approval."]] },
-  { key: "name", title: "What should your league be called?", help: "Choose a name your friends will recognize in their invite and on the leaderboard. You can change it later.", input: "Sunday Pick Crew" },
-  { key: "sports", title: "Which sports will your group pick?", help: "Choose one or more sports to start with. BragBoard loads this week’s real men’s professional games for these choices, and they can be changed later.", multi: true, choices: [["basketball", "Basketball", "Load NBA games only."], ["football", "Football", "Load NFL games only."], ["soccer", "Soccer", "Load Premier League, LaLiga, Bundesliga, Champions League, and Europa League games only."]] },
-  { key: "winner_period", title: "How often should your league crown a winner?", help: "Choose how long results should count before a new competition begins.", choices: [["weekly", "Every week", "Crown a new winner based on that week’s completed games."], ["monthly", "Every month", "Crown a winner based on all scored picks during the calendar month."], ["weekly_monthly", "Weekly and monthly", "Celebrate weekly winners while also tracking a monthly champion."]] },
-  { key: "punishment_mode", title: "Should your league use one shared punishment or separate punishments?", help: "Punishments are optional, harmless social consequences for the group. Every idea needs approval from everyone, and anyone may opt out or leave the league.", choices: [["shared", "One shared punishment", "The group uses the same approved punishment for the people assigned by the standings."], ["separate", "Separate punishments", "The group can approve and assign different punishments to individual players."]] },
-  { key: "selection", title: "How should the final punishment be chosen?", help: "First, everyone must approve the available ideas. Then your group chooses among them.", choices: [["vote", "Let the group vote", "Members vote, and the most popular approved idea wins."], ["random", "Choose randomly", "BragBoard randomly selects one of the ideas everyone has approved."]] },
-  { key: "loser_scope", title: "Who is assigned the punishment?", help: "This setting uses the standings to determine who is assigned the group’s approved punishment. It is a social agreement, not a legal obligation: participation remains voluntary.", choices: [["last", "The last-place player", "The player at the bottom of the standings is assigned the approved punishment."], ["bottom_three", "The bottom three players", "The three lowest-ranked players are assigned an approved punishment."]] },
-  { key: "coins", title: "Should winners earn BragBoard Coins?", help: "BragBoard Coins are in-app points for bragging rights. They are not real money and cannot be purchased, transferred, sold, or redeemed.", choices: [["on", "Yes, award BragBoard Coins", "Weekly winners earn 10 coins and monthly winners earn 20."], ["off", "No, use the leaderboard only", "Track wins and standings without awarding coins."]] },
-  { key: "punishment_proposal", title: "Propose a punishment", help: "Write one punishment for your group to review. You will see everyone’s ideas after the league is created. Do not write anything dangerous, degrading, sexual, discriminatory, illegal, or financially coercive.", proposal: true },
-  { key: "safety", title: "Agree to the league safety rules", help: "Punishments must be harmless, legal, and voluntary. Dangerous, degrading, sexual, discriminatory, or financially coercive ideas are not allowed. Signing a league agreement does not remove anyone’s right to decline or leave.", choices: [["confirmed", "I agree to keep punishments safe and voluntary", "Your group can only use ideas everyone has approved."]] }
+  { key: "authority", category: "League leadership", title: "Who manages your league’s regular settings?", help: "Choose how your group changes everyday league settings after setup: sports, winner period, and which games appear. This never gives anyone control over punishments—every punishment still needs approval from every member.", impact: "This choice determines whether normal league updates need a group vote or can be handled by the host.", changeNote: "You can revisit regular settings later. Punishment consent always stays unanimous.", choices: [["everyone", "Everyone decides together", "Every member must agree before a regular league setting changes. Best when your group wants every decision to be shared."], ["host", "The host manages regular settings", "The creator can update sports, winner period, and games without a group vote. Best when your group wants quick adjustments."]] },
+  { key: "name", category: "League identity", title: "What should your league be called?", help: "Choose the name your friends will recognize in their invite, on the leaderboard, and in the group chat.", impact: "This is the label your members see whenever they open the league.", changeNote: "You can change the league name later.", input: "Sunday Pick Crew" },
+  { key: "sports", category: "Weekly game card", title: "Which sports should appear in your league?", help: "Choose one or more sports to start with. BragBoard uses these choices to load this week’s real men’s professional games.", impact: "Your host will only load games from the sports selected here, so pick the sports your group actually watches.", changeNote: "You can adjust the sport list later before a future week is prepared.", multi: true, choices: [["basketball", "Basketball", "Load NBA games only."], ["football", "Football", "Load NFL games only."], ["soccer", "Soccer", "Load Premier League, LaLiga, Bundesliga, Champions League, and Europa League games only."]] },
+  { key: "winner_period", category: "Competition schedule", title: "When should your league celebrate winners?", help: "Choose how long picks count before BragBoard names a new winner. This does not change when individual picks lock—every pick still locks at kickoff.", impact: "This controls the rhythm of the leaderboard and when your group has something new to talk about.", changeNote: "Weekly and monthly is the most complete view; choose the pace that fits your group.", choices: [["weekly", "Every week", "Name a winner from that week’s completed games. Great for quick, frequent bragging rights."], ["monthly", "Every month", "Name a winner from all completed picks in the calendar month. Great for one longer contest."], ["weekly_monthly", "Weekly and monthly", "Celebrate weekly winners while also tracking a monthly champion across every scored pick."]] },
+  { key: "punishment_mode", category: "Punishment format", title: "Should your league use one shared punishment or separate punishments?", help: "Punishments are optional, harmless social consequences for the group. Every idea needs approval from everyone, and anyone may opt out or leave the league.", impact: "This tells the group whether standings point to one approved idea or allow different approved ideas for different players.", changeNote: "No punishment can be chosen until the group has approved it unanimously.", choices: [["shared", "One shared punishment", "The group uses one approved punishment for the people assigned by the standings. Simpler to explain and vote on."], ["separate", "Separate punishments", "The group can approve and assign different punishments to individual players. More variety, but more ideas to review."]] },
+  { key: "selection", category: "Punishment selection", title: "How should the group choose the final punishment?", help: "First, everyone must approve the available ideas. Then this is the method your group uses to select from only those approved ideas.", impact: "This determines what happens after the safety approval step—not how picks or standings work.", changeNote: "Your group can use a vote or a random choice; only unanimously approved ideas appear in either option.", choices: [["vote", "Let the group vote", "Members vote, and the most popular idea everyone approved wins. Best when your group wants a direct say."], ["random", "Choose randomly", "BragBoard randomly selects one idea everyone approved. Best when your group wants an unbiased surprise."]] },
+  { key: "loser_scope", category: "Standings consequence", title: "Who is assigned the punishment?", help: "Choose which lowest-ranked players the standings point to. A punishment remains a voluntary social agreement, never a legal obligation.", impact: "This only identifies who the group may ask about an approved idea after the scoring period ends.", changeNote: "Anyone can decline or leave; no setting can remove that choice.", choices: [["last", "The last-place player", "The player at the bottom of the standings is the only person assigned the approved punishment."], ["bottom_three", "The bottom three players", "The three lowest-ranked players are assigned an approved punishment. This makes the end-of-period race broader."]] },
+  { key: "coins", category: "Bragging rights", title: "Should winners earn BragBoard Coins?", help: "BragBoard Coins are in-app scorekeeping points for bragging rights. They are not real money and cannot be purchased, transferred, sold, or redeemed.", impact: "Coins add a visible reward beside the leaderboard; they never create a payment, pot, or cash prize.", changeNote: "If you turn coins on, weekly winners earn 10 and monthly winners earn 20.", choices: [["on", "Yes, award BragBoard Coins", "Show 10 coins for weekly winners and 20 coins for monthly winners. Coins stay inside BragBoard."], ["off", "No, use the leaderboard only", "Keep the game focused on wins, points, and rank without displaying coin awards."]] },
+  { key: "punishment_proposal", category: "Your group’s idea", title: "Write the first punishment proposal", help: "Add one harmless, voluntary idea for your friends to review after the league is created. This is a proposal—not an automatic assignment.", impact: "Your group will see this idea alongside other members’ proposals and must approve it unanimously before it can be selected.", changeNote: "Do not include anything dangerous, degrading, sexual, discriminatory, illegal, or financially coercive.", proposal: true },
+  { key: "safety", category: "Group agreement", title: "Confirm the league safety rules", help: "Punishments must be harmless, legal, and voluntary. Dangerous, degrading, sexual, discriminatory, or financially coercive ideas are not allowed. Signing a league agreement never removes anyone’s right to decline or leave.", impact: "This rule applies to every proposal and every member, before and after the league begins.", changeNote: "Only ideas everyone approves can enter the group’s selection.", choices: [["confirmed", "I agree to keep punishments safe and voluntary", "I understand that every member can decline or leave, and only unanimously approved ideas can be used."]] }
 ];
 
 function show(id) { $(id).hidden = false; }
@@ -108,16 +108,42 @@ function startSetup(event) {
   event.preventDefault(); message("league-message", "");
   state.setup = { step: 0, answers: {} }; hide("league-panel"); renderSetup(); show("setup-panel");
 }
+function setupAnswerLabel(question) {
+  const answer = state.setup.answers[question.key];
+  if (!answer) return null;
+  if (question.input) return answer;
+  if (question.proposal) return "Proposal written";
+  const values = Array.isArray(answer) ? answer : [answer];
+  return values.map((value) => question.choices.find(([choice]) => choice === value)?.[1] || value).join(" · ");
+}
+function appendLeaguePlan(target) {
+  const plan = document.createElement("aside"); plan.className = "setup-plan";
+  plan.append(text("p", "YOUR LEAGUE PLAN", "eyebrow"));
+  const completed = setupQuestions.slice(0, state.setup.step).map((question) => ({ question, answer: setupAnswerLabel(question) })).filter((entry) => entry.answer);
+  if (!completed.length) {
+    plan.append(text("p", "Your choices will appear here as you shape the league. Nothing is saved until you create the private league.", "hint"));
+  } else {
+    const list = document.createElement("ul"); list.className = "setup-plan-list";
+    completed.forEach(({ question, answer }) => {
+      const item = document.createElement("li"); item.append(text("span", question.category), text("strong", answer)); list.append(item);
+    });
+    plan.append(list, text("p", "Review these choices as you go. You can use Back to change an earlier answer before you create the league.", "hint"));
+  }
+  target.append(plan);
+}
 function renderSetup() {
   const question = setupQuestions[state.setup.step], target = $("setup-question");
-  clear(target); $("setup-progress").textContent = `STEP ${state.setup.step + 1} OF ${setupQuestions.length}`;
+  clear(target); $("setup-progress").textContent = `STEP ${state.setup.step + 1} OF ${setupQuestions.length} · ${question.category.toUpperCase()}`;
   $("progress-fill").style.width = `${((state.setup.step + 1) / setupQuestions.length) * 100}%`;
   if (state.setup.step === 0) {
     const intro = document.createElement("div"); intro.className = "setup-intro";
     intro.append(text("p", "CREATE YOUR PRIVATE PICK’EM LEAGUE", "eyebrow"), text("p", "You’ll answer 10 quick questions to set the rules your friends will see. First: decide who handles normal league settings. Then choose the sports, winner schedule, and punishment agreement. There’s no betting or real money."));
     target.append(intro);
   }
-  target.append(text("h2", question.title), text("p", question.help, "hint"));
+  target.append(text("p", `DECISION ${state.setup.step + 1} · ${question.category.toUpperCase()}`, "question-category"), text("h2", question.title), text("p", question.help, "hint"));
+  const context = document.createElement("div"); context.className = "question-context";
+  context.append(text("p", "WHAT THIS SETTING CHANGES", "context-label"), text("p", question.impact), text("p", question.changeNote, "change-note"));
+  target.append(context);
   if (question.input) {
     const label = document.createElement("label"); label.textContent = "League name";
     const input = document.createElement("input"); input.id = "setup-input"; input.maxLength = 60; input.required = true; input.placeholder = question.input; input.value = state.setup.answers[question.key] || "";
@@ -153,6 +179,7 @@ function renderSetup() {
     }
     target.append(choices);
   }
+  appendLeaguePlan(target);
   $("setup-back").hidden = state.setup.step === 0;
   $("setup-next").textContent = state.setup.step === setupQuestions.length - 1 ? "Create private league" : "Continue";
   message("setup-message", "");

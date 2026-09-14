@@ -17,12 +17,14 @@ const check = (condition, description) => {
 check(html.includes('id="auth-form"') && html.includes('id="create-league-form"'), "provides account and private-league entry points");
 check((app.match(/key: "/g) || []).length === 10 && app.includes("STEP") && app.includes("setupQuestions.length"), "keeps the accurately numbered ten-question league setup");
 check(app.indexOf('key: "authority"') < app.indexOf('key: "name"') && app.includes("everyday league settings"), "explains the league-manager decision before other setup choices");
+check(app.includes("WHAT THIS SETTING CHANGES") && app.includes("YOUR LEAGUE PLAN") && app.includes("setupAnswerLabel"), "shows each onboarding decision’s effect and a live league plan");
 check(app.includes("Everyone decides together") && app.includes("I agree to keep punishments safe and voluntary"), "keeps first-time rule explanations in setup");
 check(app.includes("CREATE YOUR PRIVATE PICK") && app.includes("choice-explanation"), "introduces Step 1 and explains every answer directly");
 check(html.includes("GAME INSTRUCTIONS") && html.includes("How your private league works") && html.includes("How this league plays"), "gives home and league dashboards clear game instructions");
 check(app.includes("multi: true") && app.includes("Choose at least one sport") && app.includes("setup-proposal"), "lets a creator select multiple sports and write a punishment during setup");
 check(!/snake draft|spin a wheel|take turns choosing|rotating turns/i.test(app), "removes rotating-turn selection from the punishment setup");
 check(wizardCss.includes("[hidden]{display:none !important}"), "shows exactly one focused application state at a time");
+check(wizardCss.includes("question-context") && wizardCss.includes("setup-plan-list"), "styles detailed decision guidance and the league-plan summary");
 check(html.includes('id="lock-picks"') && app.includes("lock_week_picks"), "uses a database lock function for picks");
 check(app.includes("chosen_team") && app.includes("selected !== state.games.length"), "requires one displayed-game choice before locking");
 check(app.includes("record_game_result") && app.includes("finalize_week"), "keeps result recording and weekly awards host-mediated");
