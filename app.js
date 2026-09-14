@@ -2,8 +2,8 @@
 const $ = (id) => document.getElementById(id);
 const state = { client: null, user: null, profile: null, leagues: [], league: null, member: null, week: null, games: [], picks: new Map(), signingUp: false, setup: { step: 0, answers: {} } };
 const setupQuestions = [
-  { key: "name", title: "What should your league be called?", help: "Choose a name your friends will recognize. You can change it later.", input: "Sunday Pick Crew" },
-  { key: "authority", title: "Who should manage your league’s settings?", help: "This controls regular settings such as sports and competitions. Punishments always require approval from everyone.", choices: [["everyone", "Everyone decides together", "All members must agree before a regular league setting changes."], ["host", "The host manages settings", "The person who created the league can update regular settings."]] },
+  { key: "authority", title: "Who manages your league’s regular settings?", help: "Choose how your group changes everyday league settings after setup: sports, winner period, and which games appear. This never gives anyone control over punishments—every punishment still needs approval from every member.", choices: [["everyone", "Everyone decides together", "Every member must agree before a regular league setting changes. Use this when your group wants every decision to be shared."], ["host", "The host manages regular settings", "The creator can update sports, winner period, and games without a group vote. Punishments still require everyone’s approval."]] },
+  { key: "name", title: "What should your league be called?", help: "Choose a name your friends will recognize in their invite and on the leaderboard. You can change it later.", input: "Sunday Pick Crew" },
   { key: "sports", title: "Which sports will your group pick?", help: "Choose one or more sports to start with. BragBoard loads this week’s real men’s professional games for these choices, and they can be changed later.", multi: true, choices: [["basketball", "Basketball", "Load NBA games only."], ["football", "Football", "Load NFL games only."], ["soccer", "Soccer", "Load Premier League, LaLiga, Bundesliga, Champions League, and Europa League games only."]] },
   { key: "winner_period", title: "How often should your league crown a winner?", help: "Choose how long results should count before a new competition begins.", choices: [["weekly", "Every week", "Crown a new winner based on that week’s completed games."], ["monthly", "Every month", "Crown a winner based on all scored picks during the calendar month."], ["weekly_monthly", "Weekly and monthly", "Celebrate weekly winners while also tracking a monthly champion."]] },
   { key: "punishment_mode", title: "Should your league use one shared punishment or separate punishments?", help: "Punishments are optional, harmless social consequences for the group. Every idea needs approval from everyone, and anyone may opt out or leave the league.", choices: [["shared", "One shared punishment", "The group uses the same approved punishment for the people assigned by the standings."], ["separate", "Separate punishments", "The group can approve and assign different punishments to individual players."]] },
@@ -114,7 +114,7 @@ function renderSetup() {
   $("progress-fill").style.width = `${((state.setup.step + 1) / setupQuestions.length) * 100}%`;
   if (state.setup.step === 0) {
     const intro = document.createElement("div"); intro.className = "setup-intro";
-    intro.append(text("p", "CREATE YOUR PRIVATE PICK’EM LEAGUE", "eyebrow"), text("p", "Invite friends, pick the winners of real games, and compete for weekly and monthly bragging rights. There’s no betting or real money. You can change most settings later."));
+    intro.append(text("p", "CREATE YOUR PRIVATE PICK’EM LEAGUE", "eyebrow"), text("p", "You’ll answer 10 quick questions to set the rules your friends will see. First: decide who handles normal league settings. Then choose the sports, winner schedule, and punishment agreement. There’s no betting or real money."));
     target.append(intro);
   }
   target.append(text("h2", question.title), text("p", question.help, "hint"));
@@ -204,6 +204,9 @@ async function openLeague(leagueId) {
   $("league-title").textContent = state.league.name;
   $("copy-invite").hidden = !isHost();
   $("host-tools").hidden = !isHost();
+  $("league-instructions-copy").textContent = isHost()
+    ? "You are the host. First load the real games your group chose. Then share the invite code so friends can pick one winner in every game before kickoff."
+    : "Your host loads this week’s games. Pick exactly one winner in every listed game before its kickoff, then lock your card. Your locked picks cannot change.";
   const sports = state.league.settings?.sports || [];
   const selectedSports = sports.length ? sports.map((sport) => sport[0].toUpperCase() + sport.slice(1)).join(", ") : "the sports selected in setup";
   $("guide-sports").textContent = `You chose ${selectedSports}. BragBoard loads their real men’s professional games for this week.`;
@@ -238,7 +241,7 @@ function renderGames() {
   $("host-start-guide").hidden = !isHost() || !waitingForGames;
   $("host-actions").hidden = waitingForGames || !isHost();
   $("game-heading").textContent = isHost() && waitingForGames ? "Set up your first week." : "Make your picks.";
-  $("pick-rule").textContent = isHost() && waitingForGames ? "Start with the three steps below. Your friends can make picks after you add the games." : "Choose exactly one winner for every listed game. Once locked, your choices remain visible and cannot be changed.";
+  $("pick-rule").textContent = isHost() && waitingForGames ? "Start with the three steps below. Your friends can make picks after this week’s real games load." : "Choose exactly one winner for every listed game. Once locked, your choices remain visible and cannot be changed.";
   if (waitingForGames) list.append(text("p", isHost() ? "No games yet — use Step 2 above to load the selected real games." : "The host is loading this week’s games. Check back when the picks are ready.", "hint"));
   const now = Date.now();
   for (const game of state.games) {
