@@ -155,6 +155,48 @@ begin
 end;
 $$;
 
+-- Keep exactly three upcoming open weeks ready for a host. Games remain loaded one
+-- selected week at a time, which avoids a large burst of sports-provider requests.
+create or replace function public.ensure_upcoming_weeks(target_league uuid)
+returns setof public.game_weeks language plpgsql security definer set search_path = public as $$
+declare anchor_week public.game_weeks; scheduled_week public.game_weeks; scheduled_start timestamptz; week_offset integer;
+begin
+  if not public.is_host(target_league) then raise exception 'Only the league host can schedule upcoming weeks.'; end if;
+
+  select * into anchor_week
+  from public.game_weeks
+  where league_id = target_league and status = 'open' and ends_at > now()
+  order by starts_at asc
+  limit 1;
+
+  if not found then
+    insert into public.game_weeks(league_id, label, starts_at, ends_at)
+    values (target_league, 'Week of ' || to_char(now(), 'Mon DD'), now(), now() + interval '7 days')
+    returning * into anchor_week;
+  end if;
+
+  for week_offset in 0..2 loop
+    scheduled_start := anchor_week.starts_at + (week_offset * interval '7 days');
+    select * into scheduled_week
+    from public.game_weeks
+    where league_id = target_league and starts_at = scheduled_start
+    order by created_at asc
+    limit 1;
+    if not found then
+      insert into public.game_weeks(league_id, label, starts_at, ends_at)
+      values (
+        target_league,
+        'Week of ' || to_char(scheduled_start, 'Mon DD'),
+        scheduled_start,
+        scheduled_start + interval '7 days'
+      )
+      returning * into scheduled_week;
+    end if;
+    return next scheduled_week;
+  end loop;
+end;
+$$;
+
 create or replace function public.lock_week_picks(target_week uuid, selections jsonb)
 returns void language plpgsql security definer set search_path = public as $$
 declare total_games integer; supplied integer; existing integer; invalid integer;
@@ -305,4 +347,4 @@ create policy "members read coin awards" on public.coin_awards for select to aut
 grant usage on schema public to authenticated;
 grant select on public.profiles, public.leagues, public.league_members, public.game_weeks, public.games, public.picks, public.punishment_proposals, public.proposal_approvals, public.coin_awards to authenticated;
 grant insert on public.games, public.punishment_proposals, public.proposal_approvals to authenticated;
-grant execute on function public.create_league(text, jsonb), public.join_league(text), public.ensure_current_week(uuid), public.lock_week_picks(uuid, jsonb), public.record_game_result(uuid, text), public.league_leaderboard(uuid), public.finalize_week(uuid), public.award_month(uuid) to authenticated;
+grant execute on function public.create_league(text, jsonb), public.join_league(text), public.ensure_current_week(uuid), public.ensure_upcoming_weeks(uuid), public.lock_week_picks(uuid, jsonb), public.record_game_result(uuid, text), public.league_leaderboard(uuid), public.finalize_week(uuid), public.award_month(uuid) to authenticated;

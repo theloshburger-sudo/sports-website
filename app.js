@@ -1,6 +1,6 @@
 /* BragBoard's public browser client. Authorization lives in Supabase RLS policies. */
 const $ = (id) => document.getElementById(id);
-const state = { client: null, user: null, profile: null, leagues: [], league: null, member: null, week: null, games: [], picks: new Map(), signingUp: false, setup: { step: 0, answers: {} } };
+const state = { client: null, user: null, profile: null, leagues: [], league: null, member: null, weeks: [], week: null, games: [], picks: new Map(), signingUp: false, setup: { step: 0, answers: {} } };
 const setupQuestions = [
   { key: "authority", category: "League leadership", title: "Who manages your league’s regular settings?", help: "Choose how your group changes everyday league settings after setup: sports, winner period, and which games appear. This never gives anyone control over punishments—every punishment still needs approval from every member.", impact: "This choice determines whether normal league updates need a group vote or can be handled by the host.", changeNote: "You can revisit regular settings later. Punishment consent always stays unanimous.", choices: [["everyone", "Everyone decides together", "Every member must agree before a regular league setting changes. Best when your group wants every decision to be shared."], ["host", "The host manages regular settings", "The creator can update sports, winner period, and games without a group vote. Best when your group wants quick adjustments."]] },
   { key: "name", category: "League identity", title: "What should your league be called?", help: "Choose the name your friends will recognize in their invite, on the leaderboard, and in the group chat.", impact: "This is the label your members see whenever they open the league.", changeNote: "You can change the league name later.", input: "Sunday Pick Crew" },
@@ -227,7 +227,7 @@ async function joinLeague(event) {
   if (error) return message("league-message", error.message, true);
   $("invite-code").value = ""; toast("You joined the league."); await loadHome(); await openLeague(data);
 }
-async function showLeagues() { state.league = null; state.week = null; hide("game-panel"); await loadHome(); }
+async function showLeagues() { state.league = null; state.weeks = []; state.week = null; hide("game-panel"); await loadHome(); }
 async function openLeague(leagueId) {
   state.member = state.leagues.find((m) => m.league_id === leagueId);
   state.league = state.member?.leagues;
@@ -237,25 +237,41 @@ async function openLeague(leagueId) {
   $("copy-invite").hidden = !isHost();
   $("host-tools").hidden = !isHost();
   $("league-instructions-copy").textContent = isHost()
-    ? "You are the host. First load the real games your group chose. Then share the invite code so friends can pick one winner in every game before kickoff."
-    : "Your host loads this week’s games. Pick exactly one winner in every listed game before its kickoff, then lock your card. Your locked picks cannot change.";
+    ? "You are the host. BragBoard schedules this week plus the next two weeks. Choose a week, load its real games, then share the invite code so friends can pick one winner in every game before kickoff."
+    : "Choose a scheduled week to see its games. Pick exactly one winner in every listed game before its kickoff, then lock your card. Your locked picks cannot change.";
   const loserScope = state.league.settings?.loser_scope === "bottom_three" ? "the bottom three players" : "the last-place player";
   $("loser-rule-copy").textContent = `This is a loser-does-the-punishment league: when the scoring period ends, ${loserScope} is assigned the group’s unanimously approved punishment. It remains harmless and voluntary; winners get bragging rights and non-cash coins, not a prize.`;
   const sports = state.league.settings?.sports || [];
   const selectedSports = sports.length ? sports.map((sport) => sport[0].toUpperCase() + sport.slice(1)).join(", ") : "the sports selected in setup";
-  $("guide-sports").textContent = `You chose ${selectedSports}. BragBoard loads their real men’s professional games for this week.`;
-  $("sync-copy").textContent = `Load real men’s professional ${selectedSports} games for the current week. Women’s competitions are not included.`;
+  $("guide-sports").textContent = `You chose ${selectedSports}. BragBoard loads their real men’s professional games for each scheduled week you prepare.`;
+  $("sync-copy").textContent = `Choose a scheduled week above, then load its real men’s professional ${selectedSports} games. Women’s competitions are not included.`;
   await loadLeague();
 }
 async function loadLeague() {
-  let { data: week, error } = await state.client.from("game_weeks").select("*").eq("league_id", state.league.id).in("status", ["open", "completed"]).order("starts_at", { ascending: false }).limit(1).maybeSingle();
+  let { data: weeks, error } = await state.client.from("game_weeks").select("*").eq("league_id", state.league.id).eq("status", "open").gte("ends_at", new Date().toISOString()).order("starts_at", { ascending: true }).limit(3);
   if (error) return toast(error.message);
-  if (!week && isHost()) {
-    const created = await state.client.rpc("ensure_current_week", { target_league: state.league.id });
-    if (created.error) return toast(created.error.message);
-    week = created.data;
+  if (isHost() && (weeks || []).length < 3) {
+    const created = await state.client.rpc("ensure_upcoming_weeks", { target_league: state.league.id });
+    if (created.error) {
+      // Existing projects can keep working while the documented schedule migration is applied.
+      const missingScheduleFunction = created.error.code === "42883" || created.error.code === "PGRST202" || /ensure_upcoming_weeks/i.test(created.error.message || "");
+      if (!missingScheduleFunction) return toast(created.error.message);
+      const fallback = await state.client.rpc("ensure_current_week", { target_league: state.league.id });
+      if (fallback.error) return toast(fallback.error.message);
+      weeks = fallback.data ? [fallback.data] : weeks;
+      message("sync-message", "This project still needs the upcoming-weeks migration before it can schedule all three weeks.", true);
+    } else {
+      weeks = created.data || weeks;
+    }
   }
-  state.week = week; state.games = []; state.picks = new Map();
+  state.weeks = (weeks || []).slice().sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at));
+  if (!state.week || !state.weeks.some((candidate) => candidate.id === state.week.id)) {
+    const now = Date.now();
+    state.week = state.weeks.find((candidate) => new Date(candidate.starts_at).getTime() <= now && new Date(candidate.ends_at).getTime() > now) || state.weeks[0] || null;
+  }
+  const week = state.week;
+  state.games = []; state.picks = new Map();
+  renderWeekSchedule();
   $("week-label").textContent = week ? week.label : "WAITING FOR A HOST";
   if (!week) { $("games").replaceChildren(text("p", "The host has not opened a week yet.", "hint")); return; }
   const [gamesResponse, picksResponse, boardResponse, proposalResponse] = await Promise.all([
@@ -269,14 +285,34 @@ async function loadLeague() {
   for (const pick of picksResponse.data || []) state.picks.set(pick.game_id, pick);
   renderGames(); renderBoard(boardResponse.data || []); renderProposals(proposalResponse.data || []);
 }
+function weekTabLabel(week, index) {
+  const now = Date.now();
+  if (new Date(week.starts_at).getTime() <= now && new Date(week.ends_at).getTime() > now) return `This week · ${week.label}`;
+  return index === 1 ? `Next week · ${week.label}` : `Week ${index + 1} · ${week.label}`;
+}
+function renderWeekSchedule() {
+  const panel = $("week-schedule"), target = $("week-selector"); clear(target);
+  panel.hidden = !state.weeks.length;
+  if (!state.weeks.length) return;
+  $("week-schedule-copy").textContent = "Your league keeps the current week and the next two weeks ready. Pick a week to view its games or prepare it as host.";
+  state.weeks.forEach((week, index) => {
+    const tab = button(weekTabLabel(week, index), `week-tab${state.week?.id === week.id ? " selected" : ""}`);
+    tab.dataset.weekId = week.id;
+    tab.setAttribute("aria-pressed", String(state.week?.id === week.id));
+    target.append(tab);
+  });
+}
 function renderGames() {
   const list = $("games"); clear(list);
   const waitingForGames = !state.games.length;
   $("host-start-guide").hidden = !isHost() || !waitingForGames;
   $("host-actions").hidden = waitingForGames || !isHost();
-  $("game-heading").textContent = isHost() && waitingForGames ? "Set up your first week." : "Make your picks.";
-  $("pick-rule").textContent = isHost() && waitingForGames ? "Start with the three steps below. Your friends can make picks after this week’s real games load." : "Choose exactly one winner for every listed game. Once locked, your choices remain visible and cannot be changed.";
-  if (waitingForGames) list.append(text("p", isHost() ? "No games yet — use Step 2 above to load the selected real games." : "The host is loading this week’s games. Check back when the picks are ready.", "hint"));
+  const selectedWeek = state.week?.label || "this week";
+  $("host-tools-title").textContent = `Load games for ${selectedWeek}.`;
+  $("sync-games").textContent = `Load ${selectedWeek}'s games`;
+  $("game-heading").textContent = isHost() && waitingForGames ? `Prepare ${selectedWeek}.` : "Make your picks.";
+  $("pick-rule").textContent = isHost() && waitingForGames ? "Choose one of the next three weeks above, then load its real games. Your friends can make picks after that week’s games load." : "Choose exactly one winner for every listed game. Once locked, your choices remain visible and cannot be changed.";
+  if (waitingForGames) list.append(text("p", isHost() ? `No games are loaded for ${selectedWeek} yet — use Step 2 above to load that week’s selected real games.` : `The host is preparing ${selectedWeek}'s games. Check back when the picks are ready.`, "hint"));
   const now = Date.now();
   for (const game of state.games) {
     const card = document.createElement("article"); card.className = "game";
@@ -320,6 +356,12 @@ function renderProposals(proposals) {
   });
 }
 async function handleClick(event) {
+  const week = event.target.closest("[data-week-id]");
+  if (week) {
+    const chosen = state.weeks.find((candidate) => candidate.id === week.dataset.weekId);
+    if (chosen && chosen.id !== state.week?.id) { state.week = chosen; await loadLeague(); }
+    return;
+  }
   const pick = event.target.closest("[data-pick-game]");
   if (pick) { state.picks.set(pick.dataset.pickGame, { game_id: pick.dataset.pickGame, chosen_team: pick.dataset.team }); renderGames(); return; }
   const league = event.target.closest("[data-league-id]");
@@ -339,12 +381,12 @@ async function lockPicks() {
   message("pick-message", "Your card is locked. Your picks stay visible, but cannot be changed."); await loadLeague();
 }
 async function syncGames() {
-  if (!state.week) return message("sync-message", "Open a current week before loading games.", true);
+  if (!state.week) return message("sync-message", "Choose a scheduled week before loading games.", true);
   const trigger = $("sync-games"); disabled(trigger, true); message("sync-message", "Loading the selected real games…");
   const { data, error } = await state.client.functions.invoke("sync-games", { body: { leagueId: state.league.id, weekId: state.week.id } });
   disabled(trigger, false);
-  if (error) return message("sync-message", "Could not load games. The host needs to finish connecting the sports-data provider.", true);
-  message("sync-message", data?.message || "This week’s games are ready."); await loadLeague();
+  if (error) return message("sync-message", `Could not load ${state.week.label}'s games. The host needs to finish connecting the sports-data provider.`, true);
+  message("sync-message", data?.message || `${state.week.label}'s games are ready.`); await loadLeague();
 }
 async function finalizeWeek() {
   if (!state.week || !confirm("Finalize this fully scored week? Locked picks will be scored and tied weekly leaders receive 10 non-cash coins.")) return;

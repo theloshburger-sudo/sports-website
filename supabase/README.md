@@ -16,17 +16,17 @@ The schema creates profiles after email signup, private leagues with host-genera
 
 ## Live men’s-game sync
 
-1. In **SQL Editor**, run `supabase/migrations/20260912_add_provider_games.sql` once for an existing project.
+1. In **SQL Editor**, run `supabase/migrations/20260912_add_provider_games.sql` and `supabase/migrations/20260913_add_upcoming_weeks.sql` once for an existing project.
 2. Create an API-Sports account with access to API-Football, API-Basketball, and API-NFL. This app reads only NBA, NFL, Premier League, LaLiga, Bundesliga, Champions League, and Europa League. It does not request women’s competitions, Serie A, or Ligue 1.
 3. Create and deploy the `sync-games` Supabase Edge Function from `supabase/functions/sync-games/index.ts`.
 4. In **Edge Functions → Secrets**, add `APISPORTS_KEY` with the API-Sports key. Do not put this key in `config.js` or commit it to Git.
-5. A league host can now use **Load this week’s games**. The function checks that the caller is that league’s host, then upserts games for the current week without duplicates.
+5. A league host can choose from the current week plus the next two scheduled weeks, then use **Load [week]'s games**. The function checks that the caller is that league’s host, then upserts the selected week’s games without duplicates. Loading one week at a time avoids a large burst of provider requests.
 
 ## First live league
 
 1. Sign up with email and password, then confirm the email if confirmations are enabled.
 2. Create a private league and share the visible invite code from its host view.
-3. The host opens the week and uses **Load this week’s games** to import selected real men’s professional games.
+3. The host sees a three-week schedule, chooses one week, and uses its **Load games** button to import selected real men’s professional games.
 4. Each member locks exactly one winner per game before the game’s kickoff.
 5. After every result is recorded, the host finalizes the week. Tied weekly leaders get 10 in-app coins; monthly leaders can receive 20 once per calendar month.
 
