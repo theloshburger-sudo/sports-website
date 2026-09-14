@@ -284,12 +284,23 @@ async function loadLeague() {
     state.client.from("games").select("*").eq("week_id", week.id).order("kickoff_at"),
     state.client.from("picks").select("game_id, chosen_team, locked_at").eq("user_id", state.user.id),
     state.client.rpc("league_leaderboard", { target_league: state.league.id }),
-    state.client.from("punishment_proposals").select("id,body,status,proposer_id,proposer:profiles!punishment_proposals_proposer_id_fkey(display_name),proposal_approvals(user_id)").eq("league_id", state.league.id).order("created_at")
+    // Do not embed profiles here. Existing Supabase projects can have more than
+    // one relationship between these tables, which makes PostgREST reject an
+    // otherwise valid league read before the page can render.
+    state.client.from("punishment_proposals").select("id,body,status,proposer_id,proposal_approvals(user_id)").eq("league_id", state.league.id).order("created_at")
   ]);
   if (gamesResponse.error || picksResponse.error || boardResponse.error || proposalResponse.error) return toast((gamesResponse.error || picksResponse.error || boardResponse.error || proposalResponse.error).message);
+  const proposerIds = [...new Set((proposalResponse.data || []).map((proposal) => proposal.proposer_id).filter(Boolean))];
+  let proposals = proposalResponse.data || [];
+  if (proposerIds.length) {
+    const profilesResponse = await state.client.from("profiles").select("id,display_name").in("id", proposerIds);
+    if (profilesResponse.error) return toast(profilesResponse.error.message);
+    const profiles = new Map((profilesResponse.data || []).map((profile) => [profile.id, profile]));
+    proposals = proposals.map((proposal) => ({ ...proposal, proposer: profiles.get(proposal.proposer_id) || null }));
+  }
   state.games = gamesResponse.data || [];
   for (const pick of picksResponse.data || []) state.picks.set(pick.game_id, pick);
-  renderGames(); renderBoard(boardResponse.data || []); renderProposals(proposalResponse.data || []);
+  renderGames(); renderBoard(boardResponse.data || []); renderProposals(proposals);
 }
 function weekTabLabel(week, index) {
   const now = Date.now();

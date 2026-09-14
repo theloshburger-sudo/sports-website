@@ -30,7 +30,7 @@ check(wizardCss.includes("question-context") && wizardCss.includes("setup-plan-l
 check(html.includes('id="lock-picks"') && app.includes("lock_week_picks"), "uses a database lock function for picks");
 check(app.includes("chosen_team") && app.includes("selected !== state.games.length"), "requires one displayed-game choice before locking");
 check(app.includes("record_game_result") && app.includes("finalize_week"), "keeps result recording and weekly awards host-mediated");
-check(app.includes("punishment_proposals_proposer_id_fkey") && html.includes("Prepare your next three weeks in three steps"), "uses the explicit proposal relationship and gives new hosts ordered next steps");
+check(app.includes("proposerIds") && app.includes('from("profiles").select("id,display_name")') && html.includes("Prepare your next three weeks in three steps"), "loads proposal authors without an ambiguous database relationship and gives new hosts ordered next steps");
 check(html.includes('id="week-selector"') && app.includes("ensure_upcoming_weeks") && app.includes("weekTabLabel"), "schedules and lets members choose the current plus next two weeks");
 check(sql.includes("ensure_upcoming_weeks") && sql.includes("for week_offset in 0..2"), "creates exactly three upcoming open weeks for the host");
 check(app.includes("API-Sports API key is missing or invalid") && app.includes("missing or invalid"), "tells the host that an API-Sports key is needed when game loading fails");
