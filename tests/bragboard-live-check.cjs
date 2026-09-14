@@ -33,6 +33,9 @@ check(app.includes("record_game_result") && app.includes("finalize_week"), "keep
 check(app.includes("punishment_proposals_proposer_id_fkey") && html.includes("Prepare your next three weeks in three steps"), "uses the explicit proposal relationship and gives new hosts ordered next steps");
 check(html.includes('id="week-selector"') && app.includes("ensure_upcoming_weeks") && app.includes("weekTabLabel"), "schedules and lets members choose the current plus next two weeks");
 check(sql.includes("ensure_upcoming_weeks") && sql.includes("for week_offset in 0..2"), "creates exactly three upcoming open weeks for the host");
+check(app.includes("API-Sports API key is missing or invalid") && app.includes("missing or invalid"), "tells the host that an API-Sports key is needed when game loading fails");
+check(html.includes('id="delete-league"') && app.includes("deleteLeague") && sql.includes("public.delete_league"), "gives hosts a confirmed, server-authorized league deletion control");
+check(app.includes("withdrawProposal") && sql.includes("withdraw_punishment_proposal"), "lets a proposal author withdraw a pending idea without deleting approval history");
 check(app.includes('functions.invoke("sync-games"') && syncFunction.includes('membership?.role !== "host"'), "uses a host-authorized server-side live-game sync");
 check(syncFunction.includes("SOCCER_LEAGUES = [39, 140, 78, 2, 3]") && !syncFunction.includes("135") && !syncFunction.includes("61"), "loads only the approved men’s soccer competitions");
 check(!/APISPORTS_KEY/.test(app + "\n" + config) && syncFunction.includes('Deno.env.get("APISPORTS_KEY")'), "keeps the API-Sports key out of browser files");

@@ -99,8 +99,12 @@ function renderLeagueList() {
   if (!state.leagues.length) list.append(text("p", "No leagues yet. Create one or join your friends with an invite code.", "hint"));
   for (const member of state.leagues) {
     const league = member.leagues; if (!league) continue;
-    const card = button("", "panel league-card"); card.dataset.leagueId = league.id;
-    card.append(text("p", member.role === "host" ? "YOU HOST THIS LEAGUE" : "PRIVATE LEAGUE", "eyebrow"), text("h2", league.name), text("p", "Open league →"));
+    const card = document.createElement("article"); card.className = "panel league-card";
+    card.append(text("p", member.role === "host" ? "YOU HOST THIS LEAGUE" : "PRIVATE LEAGUE", "eyebrow"), text("h2", league.name));
+    const actions = document.createElement("div"); actions.className = "league-card-actions";
+    const open = button("Open league →"); open.dataset.leagueId = league.id; actions.append(open);
+    if (member.role === "host") { const remove = button("Delete league", "ghost danger"); remove.dataset.deleteLeague = league.id; actions.append(remove); }
+    card.append(actions);
     list.append(card);
   }
 }
@@ -235,6 +239,8 @@ async function openLeague(leagueId) {
   hide("league-panel"); show("game-panel");
   $("league-title").textContent = state.league.name;
   $("copy-invite").hidden = !isHost();
+  $("delete-league").hidden = !isHost();
+  $("delete-league").dataset.deleteLeague = state.league.id;
   $("host-tools").hidden = !isHost();
   $("league-instructions-copy").textContent = isHost()
     ? "You are the host. BragBoard schedules this week plus the next two weeks. Choose a week, load its real games, then share the invite code so friends can pick one winner in every game before kickoff."
@@ -278,7 +284,7 @@ async function loadLeague() {
     state.client.from("games").select("*").eq("week_id", week.id).order("kickoff_at"),
     state.client.from("picks").select("game_id, chosen_team, locked_at").eq("user_id", state.user.id),
     state.client.rpc("league_leaderboard", { target_league: state.league.id }),
-    state.client.from("punishment_proposals").select("id,body,status,proposer:profiles!punishment_proposals_proposer_id_fkey(display_name),proposal_approvals(user_id)").eq("league_id", state.league.id).order("created_at")
+    state.client.from("punishment_proposals").select("id,body,status,proposer_id,proposer:profiles!punishment_proposals_proposer_id_fkey(display_name),proposal_approvals(user_id)").eq("league_id", state.league.id).order("created_at")
   ]);
   if (gamesResponse.error || picksResponse.error || boardResponse.error || proposalResponse.error) return toast((gamesResponse.error || picksResponse.error || boardResponse.error || proposalResponse.error).message);
   state.games = gamesResponse.data || [];
@@ -352,6 +358,7 @@ function renderProposals(proposals) {
     const approvals = proposal.proposal_approvals?.length || 0;
     box.append(text("strong", proposal.body), text("p", `Proposed by ${proposal.proposer?.display_name || "member"} · ${approvals} approval${approvals === 1 ? "" : "s"} · ${proposal.status}`));
     if (!proposal.proposal_approvals?.some((a) => a.user_id === state.user.id) && proposal.status === "pending") { const approve = button("Approve as safe & voluntary"); approve.dataset.approveProposal = proposal.id; box.append(approve); }
+    if (proposal.proposer_id === state.user.id && proposal.status === "pending") { const withdraw = button("Withdraw proposal", "ghost danger"); withdraw.dataset.withdrawProposal = proposal.id; box.append(withdraw); }
     target.append(box);
   });
 }
@@ -364,6 +371,8 @@ async function handleClick(event) {
   }
   const pick = event.target.closest("[data-pick-game]");
   if (pick) { state.picks.set(pick.dataset.pickGame, { game_id: pick.dataset.pickGame, chosen_team: pick.dataset.team }); renderGames(); return; }
+  const removeLeague = event.target.closest("[data-delete-league]");
+  if (removeLeague) return deleteLeague(removeLeague.dataset.deleteLeague);
   const league = event.target.closest("[data-league-id]");
   if (league) return openLeague(league.dataset.leagueId);
   const approve = event.target.closest("[data-approve-proposal]");
@@ -371,6 +380,8 @@ async function handleClick(event) {
     const { error } = await state.client.from("proposal_approvals").insert({ proposal_id: approve.dataset.approveProposal, user_id: state.user.id });
     if (error) toast(error.message); else { toast("Approval recorded."); loadLeague(); } return;
   }
+  const withdraw = event.target.closest("[data-withdraw-proposal]");
+  if (withdraw) return withdrawProposal(withdraw.dataset.withdrawProposal);
   const result = event.target.closest("[data-result-game]");
   if (result) { const response = await state.client.rpc("record_game_result", { target_game: result.dataset.resultGame, winning_team: result.dataset.winner }); if (response.error) toast(response.error.message); else loadLeague(); }
 }
@@ -385,8 +396,23 @@ async function syncGames() {
   const trigger = $("sync-games"); disabled(trigger, true); message("sync-message", "Loading the selected real games…");
   const { data, error } = await state.client.functions.invoke("sync-games", { body: { leagueId: state.league.id, weekId: state.week.id } });
   disabled(trigger, false);
-  if (error) return message("sync-message", `Could not load ${state.week.label}'s games. The host needs to finish connecting the sports-data provider.`, true);
+  if (error) return message("sync-message", `Could not load ${state.week.label}'s games. An API-Sports API key is missing or invalid. The host must add the API-Sports key in Supabase Dashboard → Edge Functions → Secrets, then retry.`, true);
   message("sync-message", data?.message || `${state.week.label}'s games are ready.`); await loadLeague();
+}
+async function deleteLeague(leagueId) {
+  const member = state.leagues.find((entry) => entry.league_id === leagueId);
+  const name = member?.leagues?.name || "this league";
+  if (!confirm(`Delete “${name}” permanently? This removes its members, weeks, games, locked picks, standings, coin awards, and punishment proposals. This cannot be undone.`)) return;
+  const { error } = await state.client.rpc("delete_league", { target_league: leagueId });
+  if (error) return toast(error.message);
+  if (state.league?.id === leagueId) { state.league = null; state.weeks = []; state.week = null; hide("game-panel"); }
+  await loadHome(); toast(`Deleted ${name}.`);
+}
+async function withdrawProposal(proposalId) {
+  if (!confirm("Withdraw this proposal? It will no longer be available for the group to approve or choose.")) return;
+  const { error } = await state.client.rpc("withdraw_punishment_proposal", { target_proposal: proposalId });
+  if (error) return toast(error.message);
+  toast("Proposal withdrawn."); await loadLeague();
 }
 async function finalizeWeek() {
   if (!state.week || !confirm("Finalize this fully scored week? Locked picks will be scored and tied weekly leaders receive 10 non-cash coins.")) return;

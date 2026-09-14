@@ -16,7 +16,7 @@ The schema creates profiles after email signup, private leagues with host-genera
 
 ## Live men’s-game sync
 
-1. In **SQL Editor**, run `supabase/migrations/20260912_add_provider_games.sql` and `supabase/migrations/20260913_add_upcoming_weeks.sql` once for an existing project.
+1. In **SQL Editor**, run `supabase/migrations/20260912_add_provider_games.sql`, `supabase/migrations/20260913_add_upcoming_weeks.sql`, and `supabase/migrations/20260913_add_deletion_controls.sql` once for an existing project.
 2. Create an API-Sports account with access to API-Football, API-Basketball, and API-NFL. This app reads only NBA, NFL, Premier League, LaLiga, Bundesliga, Champions League, and Europa League. It does not request women’s competitions, Serie A, or Ligue 1.
 3. Create and deploy the `sync-games` Supabase Edge Function from `supabase/functions/sync-games/index.ts`.
 4. In **Edge Functions → Secrets**, add `APISPORTS_KEY` with the API-Sports key. Do not put this key in `config.js` or commit it to Git.
@@ -34,6 +34,7 @@ The schema creates profiles after email signup, private leagues with host-genera
 
 - Row-level security is enabled on every application table. Signed-in members may see only leagues they have joined.
 - The SQL functions enforce private membership, host-only game/result controls, valid pre-kickoff selections, and permanent pick locks.
+- A host can permanently delete only their own league after a confirmation prompt. A proposal author can withdraw only their own pending proposal; locked picks are never deletable.
 - A Supabase publishable/anon key is intentionally public; its access is constrained by the row-level policies. A secret or service-role key bypasses those policies and must never be placed in this repository or browser code.
 - The client intentionally has no payments, cash pots, money transfers, debt collection, or “failure to pay” feature.
 

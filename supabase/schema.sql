@@ -141,6 +141,29 @@ begin
 end;
 $$;
 
+-- A host may permanently delete only their own league. Dependent private data
+-- is removed through the foreign-key cascades declared above.
+create or replace function public.delete_league(target_league uuid)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if not public.is_host(target_league) then raise exception 'Only the league host can delete this league.'; end if;
+  delete from public.leagues where id = target_league;
+  if not found then raise exception 'That league is no longer available.'; end if;
+end;
+$$;
+
+-- Keep a proposal record, but stop it from being approved or selected when its
+-- author withdraws it before the group has unanimously approved it.
+create or replace function public.withdraw_punishment_proposal(target_proposal uuid)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  update public.punishment_proposals
+  set status = 'withdrawn'
+  where id = target_proposal and proposer_id = auth.uid() and status = 'pending';
+  if not found then raise exception 'Only the proposal author can withdraw a pending proposal.'; end if;
+end;
+$$;
+
 create or replace function public.ensure_current_week(target_league uuid)
 returns public.game_weeks language plpgsql security definer set search_path = public as $$
 declare active_week public.game_weeks;
@@ -347,4 +370,4 @@ create policy "members read coin awards" on public.coin_awards for select to aut
 grant usage on schema public to authenticated;
 grant select on public.profiles, public.leagues, public.league_members, public.game_weeks, public.games, public.picks, public.punishment_proposals, public.proposal_approvals, public.coin_awards to authenticated;
 grant insert on public.games, public.punishment_proposals, public.proposal_approvals to authenticated;
-grant execute on function public.create_league(text, jsonb), public.join_league(text), public.ensure_current_week(uuid), public.ensure_upcoming_weeks(uuid), public.lock_week_picks(uuid, jsonb), public.record_game_result(uuid, text), public.league_leaderboard(uuid), public.finalize_week(uuid), public.award_month(uuid) to authenticated;
+grant execute on function public.create_league(text, jsonb), public.join_league(text), public.delete_league(uuid), public.withdraw_punishment_proposal(uuid), public.ensure_current_week(uuid), public.ensure_upcoming_weeks(uuid), public.lock_week_picks(uuid, jsonb), public.record_game_result(uuid, text), public.league_leaderboard(uuid), public.finalize_week(uuid), public.award_month(uuid) to authenticated;
