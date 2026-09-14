@@ -41,12 +41,15 @@ create table if not exists public.game_weeks (
 create table if not exists public.games (
   id uuid primary key default gen_random_uuid(),
   week_id uuid not null references public.game_weeks(id) on delete cascade,
+  provider text not null default 'manual',
+  provider_game_id text,
   sport text not null check (char_length(sport) between 1 and 30),
   home_team text not null check (char_length(home_team) between 1 and 50),
   away_team text not null check (char_length(away_team) between 1 and 50),
   kickoff_at timestamptz not null,
   winner text check (winner is null or char_length(winner) between 1 and 50),
   created_at timestamptz not null default now(),
+  unique (week_id, provider, provider_game_id),
   check (home_team <> away_team),
   check (winner is null or winner = home_team or winner = away_team)
 );
@@ -117,7 +120,9 @@ declare new_league uuid; code text;
 begin
   if auth.uid() is null then raise exception 'Sign in to create a league.'; end if;
   if char_length(trim(league_name)) not between 1 and 60 then raise exception 'League name must be 1–60 characters.'; end if;
-  select upper(substr(encode(gen_random_bytes(8), 'hex'), 1, 10)) into code;
+  -- gen_random_uuid() is available in supported Supabase Postgres projects;
+  -- unlike gen_random_bytes(), it does not require the pgcrypto extension.
+  select upper(substr(replace(gen_random_uuid()::text, '-', ''), 1, 10)) into code;
   insert into public.leagues(name, invite_code, host_id, settings) values (trim(league_name), code, auth.uid(), coalesce(league_settings, '{}'::jsonb)) returning id into new_league;
   insert into public.league_members(league_id, user_id, role) values (new_league, auth.uid(), 'host');
   return new_league;
@@ -136,6 +141,29 @@ begin
 end;
 $$;
 
+-- A host may permanently delete only their own league. Dependent private data
+-- is removed through the foreign-key cascades declared above.
+create or replace function public.delete_league(target_league uuid)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if not public.is_host(target_league) then raise exception 'Only the league host can delete this league.'; end if;
+  delete from public.leagues where id = target_league;
+  if not found then raise exception 'That league is no longer available.'; end if;
+end;
+$$;
+
+-- Keep a proposal record, but stop it from being approved or selected when its
+-- author withdraws it before the group has unanimously approved it.
+create or replace function public.withdraw_punishment_proposal(target_proposal uuid)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  update public.punishment_proposals
+  set status = 'withdrawn'
+  where id = target_proposal and proposer_id = auth.uid() and status = 'pending';
+  if not found then raise exception 'Only the proposal author can withdraw a pending proposal.'; end if;
+end;
+$$;
+
 create or replace function public.ensure_current_week(target_league uuid)
 returns public.game_weeks language plpgsql security definer set search_path = public as $$
 declare active_week public.game_weeks;
@@ -147,6 +175,48 @@ begin
   values (target_league, 'Week of ' || to_char(now(), 'Mon DD'), now(), now() + interval '7 days')
   returning * into active_week;
   return active_week;
+end;
+$$;
+
+-- Keep exactly three upcoming open weeks ready for a host. Games remain loaded one
+-- selected week at a time, which avoids a large burst of sports-provider requests.
+create or replace function public.ensure_upcoming_weeks(target_league uuid)
+returns setof public.game_weeks language plpgsql security definer set search_path = public as $$
+declare anchor_week public.game_weeks; scheduled_week public.game_weeks; scheduled_start timestamptz; week_offset integer;
+begin
+  if not public.is_host(target_league) then raise exception 'Only the league host can schedule upcoming weeks.'; end if;
+
+  select * into anchor_week
+  from public.game_weeks
+  where league_id = target_league and status = 'open' and ends_at > now()
+  order by starts_at asc
+  limit 1;
+
+  if not found then
+    insert into public.game_weeks(league_id, label, starts_at, ends_at)
+    values (target_league, 'Week of ' || to_char(now(), 'Mon DD'), now(), now() + interval '7 days')
+    returning * into anchor_week;
+  end if;
+
+  for week_offset in 0..2 loop
+    scheduled_start := anchor_week.starts_at + (week_offset * interval '7 days');
+    select * into scheduled_week
+    from public.game_weeks
+    where league_id = target_league and starts_at = scheduled_start
+    order by created_at asc
+    limit 1;
+    if not found then
+      insert into public.game_weeks(league_id, label, starts_at, ends_at)
+      values (
+        target_league,
+        'Week of ' || to_char(scheduled_start, 'Mon DD'),
+        scheduled_start,
+        scheduled_start + interval '7 days'
+      )
+      returning * into scheduled_week;
+    end if;
+    return next scheduled_week;
+  end loop;
 end;
 $$;
 
@@ -300,4 +370,4 @@ create policy "members read coin awards" on public.coin_awards for select to aut
 grant usage on schema public to authenticated;
 grant select on public.profiles, public.leagues, public.league_members, public.game_weeks, public.games, public.picks, public.punishment_proposals, public.proposal_approvals, public.coin_awards to authenticated;
 grant insert on public.games, public.punishment_proposals, public.proposal_approvals to authenticated;
-grant execute on function public.create_league(text, jsonb), public.join_league(text), public.ensure_current_week(uuid), public.lock_week_picks(uuid, jsonb), public.record_game_result(uuid, text), public.league_leaderboard(uuid), public.finalize_week(uuid), public.award_month(uuid) to authenticated;
+grant execute on function public.create_league(text, jsonb), public.join_league(text), public.delete_league(uuid), public.withdraw_punishment_proposal(uuid), public.ensure_current_week(uuid), public.ensure_upcoming_weeks(uuid), public.lock_week_picks(uuid, jsonb), public.record_game_result(uuid, text), public.league_leaderboard(uuid), public.finalize_week(uuid), public.award_month(uuid) to authenticated;
