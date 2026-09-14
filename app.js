@@ -140,10 +140,15 @@ function renderSetup() {
     intro.append(text("p", "CREATE YOUR PRIVATE PICK’EM LEAGUE", "eyebrow"), text("p", "You’ll answer 10 quick questions to set the rules your friends will see. First: decide who handles normal league settings. Then choose the sports, winner schedule, and punishment agreement. There’s no betting or real money."));
     target.append(intro);
   }
-  target.append(text("p", `DECISION ${state.setup.step + 1} · ${question.category.toUpperCase()}`, "question-category"), text("h2", question.title), text("p", question.help, "hint"));
-  const context = document.createElement("div"); context.className = "question-context";
-  context.append(text("p", "WHAT THIS SETTING CHANGES", "context-label"), text("p", question.impact), text("p", question.changeNote, "change-note"));
-  target.append(context);
+  target.append(text("p", `DECISION ${state.setup.step + 1} · ${question.category.toUpperCase()}`, "question-category"));
+  const titleRow = document.createElement("div"); titleRow.className = "question-title-row";
+  const title = text("h2", question.title);
+  const helpButton = button("?", "question-help"); helpButton.setAttribute("aria-label", `Explain: ${question.title}`); helpButton.setAttribute("aria-expanded", "false");
+  const context = document.createElement("div"); context.className = "question-context"; context.hidden = true;
+  context.append(text("p", "WHAT THIS QUESTION MEANS", "context-label"), text("p", question.help), text("p", "WHAT THIS SETTING CHANGES", "context-label"), text("p", question.impact), text("p", question.changeNote, "change-note"));
+  helpButton.setAttribute("aria-controls", "question-context"); context.id = "question-context";
+  helpButton.addEventListener("click", () => { context.hidden = !context.hidden; helpButton.setAttribute("aria-expanded", String(!context.hidden)); helpButton.textContent = context.hidden ? "?" : "×"; });
+  titleRow.append(title, helpButton); target.append(titleRow, context);
   if (question.input) {
     const label = document.createElement("label"); label.textContent = "League name";
     const input = document.createElement("input"); input.id = "setup-input"; input.maxLength = 60; input.required = true; input.placeholder = question.input; input.value = state.setup.answers[question.key] || "";
@@ -234,6 +239,8 @@ async function openLeague(leagueId) {
   $("league-instructions-copy").textContent = isHost()
     ? "You are the host. First load the real games your group chose. Then share the invite code so friends can pick one winner in every game before kickoff."
     : "Your host loads this week’s games. Pick exactly one winner in every listed game before its kickoff, then lock your card. Your locked picks cannot change.";
+  const loserScope = state.league.settings?.loser_scope === "bottom_three" ? "the bottom three players" : "the last-place player";
+  $("loser-rule-copy").textContent = `This is a loser-does-the-punishment league: when the scoring period ends, ${loserScope} is assigned the group’s unanimously approved punishment. It remains harmless and voluntary; winners get bragging rights and non-cash coins, not a prize.`;
   const sports = state.league.settings?.sports || [];
   const selectedSports = sports.length ? sports.map((sport) => sport[0].toUpperCase() + sport.slice(1)).join(", ") : "the sports selected in setup";
   $("guide-sports").textContent = `You chose ${selectedSports}. BragBoard loads their real men’s professional games for this week.`;

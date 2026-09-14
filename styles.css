@@ -6,6 +6,7 @@
 
 /* Teach first-time players the full loop before asking them to act. */
 .home-instructions,.league-instructions{margin:0 0 25px}.instruction-lede{max-width:780px;margin:0;color:var(--muted);line-height:1.55}.instruction-steps{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;list-style:none;margin:20px 0 0;padding:0}.instruction-steps li{display:grid;gap:7px;border:1px solid var(--line);border-radius:15px;background:var(--panel2);padding:16px}.instruction-steps strong{font-size:15px}.instruction-steps span{color:var(--muted);font-size:13px;line-height:1.45}
+.loser-rule{margin:18px 0 0;padding:14px 16px;border-left:3px solid var(--gold);border-radius:0 12px 12px 0;background:#29220e;color:var(--cream);font-weight:750;line-height:1.5}
 @media(max-width:720px){.instruction-steps{grid-template-columns:1fr}}
 
 /* First-week host guide: turn an empty league into a clear next action. */

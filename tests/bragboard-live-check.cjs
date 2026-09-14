@@ -18,9 +18,11 @@ check(html.includes('id="auth-form"') && html.includes('id="create-league-form"'
 check((app.match(/key: "/g) || []).length === 10 && app.includes("STEP") && app.includes("setupQuestions.length"), "keeps the accurately numbered ten-question league setup");
 check(app.indexOf('key: "authority"') < app.indexOf('key: "name"') && app.includes("everyday league settings"), "explains the league-manager decision before other setup choices");
 check(app.includes("WHAT THIS SETTING CHANGES") && app.includes("YOUR LEAGUE PLAN") && app.includes("setupAnswerLabel"), "shows each onboarding decision’s effect and a live league plan");
+check(app.includes("WHAT THIS QUESTION MEANS") && app.includes("question-help") && app.includes("context.hidden = !context.hidden"), "keeps detailed question guidance behind an accessible on-demand help control");
 check(app.includes("Everyone decides together") && app.includes("I agree to keep punishments safe and voluntary"), "keeps first-time rule explanations in setup");
 check(app.includes("CREATE YOUR PRIVATE PICK") && app.includes("choice-explanation"), "introduces Step 1 and explains every answer directly");
 check(html.includes("GAME INSTRUCTIONS") && html.includes("How your private league works") && html.includes("How this league plays"), "gives home and league dashboards clear game instructions");
+check(html.includes("loser-does-the-punishment") && app.includes("loser-rule-copy"), "makes the approved loser-punishment format explicit on the dashboards");
 check(app.includes("multi: true") && app.includes("Choose at least one sport") && app.includes("setup-proposal"), "lets a creator select multiple sports and write a punishment during setup");
 check(!/snake draft|spin a wheel|take turns choosing|rotating turns/i.test(app), "removes rotating-turn selection from the punishment setup");
 check(wizardCss.includes("[hidden]{display:none !important}"), "shows exactly one focused application state at a time");
